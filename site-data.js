@@ -84,7 +84,7 @@ window.MIJITAKU_SITE_DATA = {
   ],
   "members": [
     {
-      "name": "にこ",
+      "name": "えも たくみ（にこ）",
       "key": "nico",
       "x": "https://x.com/nico_she_?s=11&t=mtYJcxfOAP7XxACw2ptSOg"
     },
