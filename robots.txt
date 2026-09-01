@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mijitaku.github.io/sitemap.xml
