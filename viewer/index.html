@@ -21,7 +21,7 @@ button,select,input{font:inherit}button{touch-action:manipulation}
 .desktop-turn-under-page.left{left:0}.desktop-turn-under-page.right{right:0}
 .desktop-turn-under-page img{display:block;width:100%;height:100%;object-fit:fill;-webkit-user-drag:none;user-select:none}
 .desktop-turn-strips{position:absolute;inset:0;transform-style:preserve-3d;overflow:visible}
-.desktop-turn-strip{position:absolute;top:0;height:100%;transform-style:preserve-3d;will-change:transform,filter}
+.desktop-turn-strip{position:absolute;top:0;height:100%;transform-style:preserve-3d;will-change:transform}
 .desktop-strip-face{position:absolute;inset:0;overflow:hidden;background:#fff;backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .desktop-strip-face img{position:absolute;top:0;height:100%;max-width:none;-webkit-user-drag:none;user-select:none}
 .desktop-strip-back{transform:rotateY(180deg)}
@@ -166,18 +166,19 @@ function desktopAnimatedGo(target,direction,reason){
   underL.appendChild(ul);underR.appendChild(ur);scene.append(underL,underR);
 
   const strips=document.createElement('div');strips.className='desktop-turn-strips';scene.appendChild(strips);
-  const N=18,sw=W/N,stripEls=[];
+  const N=18,sw=W/N,overlap=4,stripEls=[];
   for(let j=0;j<N;j++){
     const s0=j*sw,s1=(j+1)*sw,s=(s0+s1)/2;
     const el=document.createElement('div');el.className='desktop-turn-strip';
-    const baseLeft=W-s1;el.style.left=`${baseLeft}px`;el.style.width=`${sw+1.2}px`;
+    const baseLeft=W-s1,left=baseLeft-overlap/2;
+    el.style.left=`${left}px`;el.style.width=`${sw+overlap}px`;
     const front=document.createElement('div');front.className='desktop-strip-face desktop-strip-front';
     const back=document.createElement('div');back.className='desktop-strip-face desktop-strip-back';
     const fi=new Image(),bi=new Image();fi.draggable=bi.draggable=false;
     fi.src=frontSrc;bi.src=backSrc;
     fi.style.width=`${W}px`;bi.style.width=`${W}px`;
-    fi.style.left=`${-(W-s1)}px`;
-    bi.style.left=`${-s0}px`;
+    fi.style.left=`${-left}px`;
+    bi.style.left=`${-(s0-overlap/2)}px`;
     front.appendChild(fi);back.appendChild(bi);el.append(front,back);strips.appendChild(el);
     stripEls.push({el,s,baseCenter:W-s,sw});
   }
@@ -196,9 +197,7 @@ function desktopAnimatedGo(target,direction,reason){
     stripEls.forEach(({el,s,baseCenter})=>{
       const u=s/W,a=theta+bend*(u-.44),ix=integralAt(cx,s),iz=integralAt(cz,s);
       const mappedX=W-ix,dx=mappedX-baseCenter;
-      const light=.91+.09*Math.abs(Math.cos(a))+.035*Math.sin(Math.PI*p)*(u-.5);
       el.style.transform=`translate3d(${dx}px,0,${iz*.42}px) rotateY(${-a}rad)`;
-      el.style.filter=`brightness(${light})`;
     });
     crease.style.opacity=String(.12+.38*Math.sin(Math.PI*p));
   }
