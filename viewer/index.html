@@ -12,15 +12,26 @@ button,select,input{font:inherit}button{touch-action:manipulation}
 .speed-panel.open{opacity:1;pointer-events:auto;transform:translateY(0)}.speed-title{font-size:10px;color:#777064;margin:0 0 8px}.speed-options{display:flex;gap:6px}.speed-options button{border:1px solid #c9c0b4;background:#f7f3ec;color:#49443d;border-radius:999px;padding:6px 10px;font-size:10px}.speed-options button.active{background:#3a3731;color:#fff;border-color:#3a3731}
 .stage{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:22px 64px 24px;background:radial-gradient(ellipse at 50% 44%,var(--reader-bg-2) 0,#ded6ca 57%,#cbc1b3 100%);touch-action:pan-y;perspective:1800px;-webkit-user-select:none;user-select:none}
 .book{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;transform-style:preserve-3d}.spread{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;gap:0;transform-origin:center center;transition:transform .18s ease;z-index:2}
-.page-wrap{position:relative;width:50%;height:100%;display:flex;align-items:center;justify-content:center;max-height:100%;max-width:50%}.page{display:block;max-height:100%;max-width:100%;width:auto;height:auto;object-fit:contain;background:#fff;box-shadow:none;user-select:none;-webkit-user-drag:none}.spread.is-spread .page-wrap.left{justify-content:flex-end}.spread.is-spread .page-wrap.right{justify-content:flex-start}.page-wrap.single{width:50%;max-width:50%}.page-wrap.single .page{max-width:100%;box-shadow:0 12px 28px rgba(41,34,26,.13)}.page-wrap::after,.page-wrap.left::after,.page-wrap.right::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(45,38,29,.035)}.spine{display:none}
+.page-wrap{position:relative;height:82%;aspect-ratio:.70710678/1;flex:0 0 auto;display:flex;align-items:center;justify-content:center;max-height:82%;max-width:46%}.page{display:block;width:100%;height:100%;max-width:none;max-height:none;object-fit:contain;background:#fff;box-shadow:none;user-select:none;-webkit-user-drag:none}.spread.is-spread .page-wrap.left{justify-content:flex-end}.spread.is-spread .page-wrap.right{justify-content:flex-start}.page-wrap.single{height:82%;aspect-ratio:.70710678/1;max-height:82%;max-width:46%}.page-wrap.single .page{width:100%;height:100%;box-shadow:0 10px 24px rgba(41,34,26,.11)}.page-wrap::after,.page-wrap.left::after,.page-wrap.right::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(45,38,29,.028)}.spine{display:none}
 /* Turning layers: keep the live page DOM fixed during touch gestures. This avoids iOS cancelling the first swipe when the page underneath changes. */
 .turn-under{position:absolute;z-index:8;display:none;pointer-events:none;overflow:hidden;background:#fff;box-shadow:0 14px 30px rgba(49,39,29,.12)}.turn-under.active{display:block}.turn-under img{display:block;width:100%;height:100%;object-fit:fill;-webkit-user-drag:none;user-select:none}
+/* Desktop flexible page turn: the sheet is split into narrow strips and bent around the spine. */
+.desktop-turn-scene{position:absolute;z-index:19;pointer-events:none;transform-style:preserve-3d;perspective:1800px;overflow:visible;will-change:contents}
+.desktop-turn-under-page{position:absolute;top:0;width:50%;height:100%;overflow:hidden;background:#fff}
+.desktop-turn-under-page.left{left:0}.desktop-turn-under-page.right{right:0}
+.desktop-turn-under-page img{display:block;width:100%;height:100%;object-fit:fill;-webkit-user-drag:none;user-select:none}
+.desktop-turn-strips{position:absolute;inset:0;transform-style:preserve-3d;overflow:visible}
+.desktop-turn-strip{position:absolute;top:0;height:100%;transform-style:preserve-3d;will-change:transform,filter}
+.desktop-strip-face{position:absolute;inset:0;overflow:hidden;background:#fff;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.desktop-strip-face img{position:absolute;top:0;height:100%;max-width:none;-webkit-user-drag:none;user-select:none}
+.desktop-strip-back{transform:rotateY(180deg)}
+.desktop-turn-crease{position:absolute;top:2%;bottom:2%;width:2px;left:50%;transform:translateX(-1px);background:linear-gradient(180deg,transparent,rgba(35,29,24,.17) 15%,rgba(35,29,24,.22) 50%,rgba(35,29,24,.17) 85%,transparent);filter:blur(1.2px);opacity:.35;pointer-events:none}
 /* v6: the turning sheet is drawn as curved SVG paths instead of rotating one rigid rectangle. */
 .soft-turn{position:absolute;z-index:18;display:none;pointer-events:none;overflow:visible;filter:none;will-change:opacity}.soft-turn.active{display:block}.soft-turn svg{display:block;width:100%;height:100%;overflow:visible}.soft-front{filter:url(#softPaperLift)}.paper-back{fill:url(#paperBackGradient)}.paper-ghost{opacity:.055;filter:url(#ghostBlur)}.fold-shadow{fill:none;stroke:rgba(35,29,24,.44);stroke-width:20;stroke-linecap:round;filter:url(#creaseBlur)}.fold-soft-shadow{fill:none;stroke:rgba(35,29,24,.20);stroke-width:44;stroke-linecap:round;filter:url(#wideBlur)}.fold-highlight{fill:none;stroke:rgba(255,255,255,.88);stroke-width:2.3;stroke-linecap:round;filter:url(#tinyBlur)}.paper-edge{fill:none;stroke:rgba(80,70,60,.16);stroke-width:1.1}.curl-glow{fill:url(#curlGlow);opacity:.78}
 .arrow{position:absolute;z-index:25;top:50%;transform:translateY(-50%);width:44px;height:68px;border:1px solid rgba(59,53,45,.18);background:rgba(248,244,237,.76);backdrop-filter:blur(8px);color:#3e3a33;font-size:32px;line-height:1;cursor:pointer;border-radius:999px;box-shadow:0 6px 18px rgba(58,48,37,.10);touch-action:manipulation;opacity:.78;transition:opacity .18s,background .18s}.arrow:active{background:rgba(255,252,247,.94);opacity:1}.arrow:disabled{opacity:.13;pointer-events:none}.next{left:8px;right:auto}.prev{right:8px;left:auto}
 .loader{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:10px Georgia,serif;letter-spacing:.18em;color:#8b8276;z-index:1}.loader.hidden{display:none}.hint{position:absolute;left:50%;top:50%;bottom:auto;transform:translate(-50%,-50%);background:rgba(40,37,32,.86);color:#f4efe7;padding:12px 17px;border-radius:999px;font-size:12px;line-height:1.35;opacity:0;pointer-events:none;transition:opacity .22s;z-index:40;white-space:nowrap;box-shadow:0 8px 24px rgba(37,31,25,.16)}.hint.show{opacity:1}
 .bottombar{min-height:64px;padding:8px 16px calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:88px minmax(150px,1fr) 88px;align-items:center;gap:14px;border-top:1px solid rgba(0,0,0,.10);background:rgba(244,239,231,.97);z-index:30}.smallbtn{background:transparent;color:#575148;border:1px solid #c9c0b4;border-radius:999px;padding:8px 11px;cursor:pointer}.progress{display:flex;align-items:center;justify-content:center;gap:12px}.progress input{width:min(650px,66vw);accent-color:#6f675c;direction:rtl;writing-mode:horizontal-tb}.status{font:11px Georgia,serif;color:#777066;min-width:84px;text-align:right}.zoom{display:flex;gap:7px;justify-content:flex-end}
-@media(max-width:820px){.soft-front{filter:none}.paper-ghost,.fold-soft-shadow{display:none}.fold-shadow,.fold-highlight{filter:none}.topbar{height:52px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}.brand{min-width:0}.brand .jp{font-size:14px;letter-spacing:.13em}.brand .en,.issue-picker label{display:none}.issue-picker select{max-width:46vw;padding:7px 26px 7px 9px;font-size:10px;background:transparent}.iconbtn{padding:5px}.speed-panel{top:56px;right:max(8px,env(safe-area-inset-right))}.stage{padding:18px 20px 20px;align-items:center;background:radial-gradient(ellipse at 50% 45%,#f3ede4 0,#e5ded3 64%,#d4cabd 100%)}.spread,.spread.is-spread{gap:0}.spine{display:none}.page-wrap,.page-wrap.single{width:100%;max-width:100%;height:100%;padding:2px 0;display:flex;align-items:center;justify-content:center}.page{max-width:100%;max-height:100%;width:auto;height:auto;border-radius:1px;box-shadow:0 14px 30px rgba(49,39,29,.17),0 2px 5px rgba(49,39,29,.08)}.page-wrap::after{box-shadow:inset 0 0 0 1px rgba(45,38,29,.035)}.arrow{width:38px;height:58px;font-size:28px;background:rgba(248,244,237,.74);border-color:rgba(60,52,44,.10);opacity:.72;box-shadow:0 4px 14px rgba(49,39,29,.09)}.next{left:4px;right:auto}.prev{right:4px;left:auto}.bottombar{min-height:54px;grid-template-columns:48px 1fr 34px;gap:6px;padding:6px 8px calc(6px + env(safe-area-inset-bottom))}.smallbtn{font-size:9px;padding:6px 4px;border:0}.status{min-width:54px;font-size:9px}.progress{gap:6px}.progress input{width:100%}.zoom .zoom-out,.zoom .zoom-in{display:none}#fullscreen{font-size:12px}}
+@media(max-width:820px){.soft-front{filter:none}.paper-ghost,.fold-soft-shadow{display:none}.fold-shadow,.fold-highlight{filter:none}.topbar{height:52px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}.brand{min-width:0}.brand .jp{font-size:14px;letter-spacing:.13em}.brand .en,.issue-picker label{display:none}.issue-picker select{max-width:46vw;padding:7px 26px 7px 9px;font-size:10px;background:transparent}.iconbtn{padding:5px}.speed-panel{top:56px;right:max(8px,env(safe-area-inset-right))}.stage{padding:18px 20px 20px;align-items:center;background:radial-gradient(ellipse at 50% 45%,#f3ede4 0,#e5ded3 64%,#d4cabd 100%)}.spread,.spread.is-spread{gap:0}.spine{display:none}.page-wrap,.page-wrap.single{width:100%;max-width:100%;height:100%;max-height:100%;aspect-ratio:auto;padding:2px 0;display:flex;align-items:center;justify-content:center}.page{max-width:100%;max-height:100%;width:auto;height:auto;border-radius:1px;box-shadow:0 14px 30px rgba(49,39,29,.17),0 2px 5px rgba(49,39,29,.08)}.page-wrap::after{box-shadow:inset 0 0 0 1px rgba(45,38,29,.035)}.arrow{width:38px;height:58px;font-size:28px;background:rgba(248,244,237,.74);border-color:rgba(60,52,44,.10);opacity:.72;box-shadow:0 4px 14px rgba(49,39,29,.09)}.next{left:4px;right:auto}.prev{right:4px;left:auto}.bottombar{min-height:54px;grid-template-columns:48px 1fr 34px;gap:6px;padding:6px 8px calc(6px + env(safe-area-inset-bottom))}.smallbtn{font-size:9px;padding:6px 4px;border:0}.status{min-width:54px;font-size:9px}.progress{gap:6px}.progress input{width:100%}.zoom .zoom-out,.zoom .zoom-in{display:none}#fullscreen{font-size:12px}}
 @media(max-width:480px){.stage{padding-left:18px;padding-right:18px;padding-top:16px;padding-bottom:18px}.arrow{opacity:.74}.bottombar{min-height:52px}}
 @media(prefers-reduced-motion:reduce){.spread{transition:none}}
 .viewer-home{display:flex;align-items:center;min-width:116px}.viewer-home img{width:108px;height:auto;max-height:50px;object-fit:contain}@media(max-width:820px){.viewer-home{min-width:72px}.viewer-home img{width:68px;max-height:38px}}</style></head><body><div class="app"><header class="topbar"><a class="brand viewer-home" href="../" aria-label="トップページに戻る"><img src="../assets/images/logo.png" alt="身仕度"><span id="brandJp" hidden>月刊身仕度</span><span id="brandEn" hidden>GEKKAN MIJITAKU</span></a><div class="issue-picker"><label>ISSUE</label><select id="picker"></select></div><div class="top-actions"><button class="iconbtn" id="speedBtn" title="めくり速度" aria-label="めくり速度">⋯</button><button class="iconbtn" id="fullscreen" title="全画面" aria-label="全画面">⛶</button></div></header><main class="stage" id="stage"><div class="loader hidden" id="loader">LOADING...</div><button class="arrow next" id="next" aria-label="次のページへ進む" title="進む">‹</button><div class="book" id="book"><div class="spread" id="spread"></div><div class="spine"></div>
@@ -54,7 +65,7 @@ const CFG=window.MIJITAKU_CONFIG||{};
 const SITE={title:CFG.site?.title||'月刊身仕度',subtitle:CFG.site?.subtitle||'GEKKAN MIJITAKU'};
 const ISSUES=Array.isArray(CFG.issues)&&CFG.issues.length?CFG.issues:[{id:'2026-07',label:'2026年7月号',pages:54,folder:'2026-07'},{id:'2026-05',label:'2026年5月号',pages:52,folder:'2026-05'},{id:'2026-04',label:'2026年4月号',pages:36,folder:'2026-04'}];
 const map=Object.fromEntries(ISSUES.map(x=>[x.id,x]));
-let issue=ISSUES[0],page=1,zoom=1,turning=false,turnMs=Number(localStorage.getItem('mijitaku-turn-ms')||820),gesture=null,animFrame=0,touchCurlFrame=0,pendingCurlProgress=null,preloadTimer=0,curlW=1,curlH=1,desktopCurlMode=false,desktopCurlSpread=false;
+let issue=ISSUES[0],page=1,zoom=1,turning=false,turnMs=Number(localStorage.getItem('mijitaku-turn-ms')||820),gesture=null,animFrame=0,touchCurlFrame=0,pendingCurlProgress=null,preloadTimer=0,curlW=1,curlH=1;
 const spread=document.querySelector('#spread'),status=document.querySelector('#status'),slider=document.querySelector('#slider'),picker=document.querySelector('#picker'),loader=document.querySelector('#loader'),hint=document.querySelector('#hint'),prevBtn=document.querySelector('#prev'),nextBtn=document.querySelector('#next'),book=document.querySelector('#book'),stage=document.querySelector('#stage'),speedBtn=document.querySelector('#speedBtn'),speedPanel=document.querySelector('#speedPanel');
 const softTurn=document.querySelector('#softTurn'),turnUnder=document.querySelector('#turnUnder'),turnUnderImage=document.querySelector('#turnUnderImage'),curlSvg=document.querySelector('#curlSvg'),frontClipPath=document.querySelector('#frontClipPath'),backClipPath=document.querySelector('#backClipPath'),softFrontImage=document.querySelector('#softFrontImage'),paperBack=document.querySelector('#paperBack'),paperGhost=document.querySelector('#paperGhost'),foldShadow=document.querySelector('#foldShadow'),foldSoftShadow=document.querySelector('#foldSoftShadow'),foldHighlight=document.querySelector('#foldHighlight'),paperEdge=document.querySelector('#paperEdge'),curlGlowPath=document.querySelector('#curlGlowPath');
 function mobile(){return matchMedia('(max-width:820px)').matches}function spreadMode(){return !mobile()&&page>1&&page<issue.pages}function pageURL(n){const folder=issue.folder||issue.id;return `issues/${folder}/p-${String(n).padStart(2,'0')}.webp`}function track(event,data={}){window.dispatchEvent(new CustomEvent('mijitaku-analytics',{detail:{event,issue:issue.id,page,...data}}))}const preloadCache=new Map();function warmPage(n,priority='low'){if(n<1||n>issue.pages)return null;const src=pageURL(n);let im=preloadCache.get(src);if(im)return im;im=new Image();im.decoding='async';im.fetchPriority=priority;im.src=src;preloadCache.set(src,im);if(im.decode)im.decode().catch(()=>{});return im}function preloadAround(center=page){for(const d of [2,-2,3,-3,4,-4])warmPage(center+d,'low')}function schedulePreload(center=page){clearTimeout(preloadTimer);warmPage(center+1,'high');warmPage(center-1,'high');preloadTimer=setTimeout(()=>{if('requestIdleCallback'in window)requestIdleCallback(()=>preloadAround(center),{timeout:500});else preloadAround(center)},mobile()?140:90)}
@@ -94,8 +105,7 @@ function styleCurl(progress,mode){
   else{front=g.A.y>0?`${crease} L 0 ${H} L 0 0 L ${W} 0 L ${W} ${g.A.y.toFixed(2)} Z`:`${crease} L 0 ${H} L 0 0 Z`}
   const outerBack=`M ${g.B.x.toFixed(2)} ${g.B.y.toFixed(2)} C ${g.c2.x.toFixed(2)} ${g.c2.y.toFixed(2)} ${g.c1.x.toFixed(2)} ${g.c1.y.toFixed(2)} ${g.A.x.toFixed(2)} ${g.A.y.toFixed(2)} L ${g.A2.x.toFixed(2)} ${g.A2.y.toFixed(2)} C ${g.oc1.x.toFixed(2)} ${g.oc1.y.toFixed(2)} ${g.oc2.x.toFixed(2)} ${g.oc2.y.toFixed(2)} ${g.B2.x.toFixed(2)} ${g.B2.y.toFixed(2)} Z`;
   const isMobile=mobile();frontClipPath.setAttribute('d',front);backClipPath.setAttribute('d',outerBack);paperBack.setAttribute('d',outerBack);foldShadow.setAttribute('d',crease);foldHighlight.setAttribute('d',crease);curlGlowPath.setAttribute('d',outerBack);if(!isMobile){paperEdge.setAttribute('d',outerBack);foldSoftShadow.setAttribute('d',crease)}
-  const shadow=.16+.84*Math.pow(g.bend,.62);foldShadow.style.opacity=String(.22+.62*shadow);foldHighlight.style.opacity=String(.34+.54*g.bend);paperBack.style.opacity=String(.96);if(!isMobile){foldSoftShadow.style.opacity=String(.12+.54*shadow);paperGhost.style.opacity=desktopCurlMode?String(.68+.20*g.bend):String(.025+.06*g.bend)}curlGlowPath.style.opacity=String(.20+.48*g.bend);softTurn.style.opacity=String(q>=.999?0:1);
-  if(desktopCurlMode&&desktopCurlSpread){const x=mode==='next'?progress*curlW:(1-progress)*curlW;softTurn.style.transform=`translate3d(${x}px,0,0)`}else if(!desktopCurlMode){softTurn.style.transform=''}
+  const shadow=.16+.84*Math.pow(g.bend,.62);foldShadow.style.opacity=String(.22+.62*shadow);foldHighlight.style.opacity=String(.34+.54*g.bend);paperBack.style.opacity=String(.96);if(!isMobile){foldSoftShadow.style.opacity=String(.12+.54*shadow);paperGhost.style.opacity=String(.025+.06*g.bend)}curlGlowPath.style.opacity=String(.20+.48*g.bend);softTurn.style.opacity=String(q>=.999?0:1);
 }
 function beginFingerTurn(direction){
   if(turning||!mobile())return false;const target=direction==='next'?page+1:page-1;if(target<1||target>issue.pages)return false;
@@ -118,29 +128,90 @@ function animateCurl(to,done){const from=gesture.progress,start=performance.now(
 function finishTurn(commit){if(!gesture?.direction){turning=false;return}if(touchCurlFrame){cancelAnimationFrame(touchCurlFrame);touchCurlFrame=0;styleCurl(gesture.progress,gesture.direction)}const g={...gesture};animateCurl(commit?1:0,()=>{if(commit){const from=page;page=g.target;render();track(g.direction,{from,to:page,gesture:true});requestAnimationFrame(()=>{softTurn.classList.remove('active');softTurn.style.opacity='';turnUnder.classList.remove('active');turning=false;gesture=null})}else{softTurn.classList.remove('active');softTurn.style.opacity='';turnUnder.classList.remove('active');render();turning=false;gesture=null}})}
 function desktopAnimatedGo(target,direction,reason){
   target=Math.max(1,Math.min(issue.pages,target));if(target===page||turning)return;
-  const pages=[...spread.querySelectorAll('.page')],left=spread.querySelector('.page-wrap.left .page'),right=spread.querySelector('.page-wrap.right .page');
-  const isSpread=!!(left&&right),anchor=isSpread?left:pages[0];if(!anchor){directGo(target,reason);return}
-  if(!fitSoftTurn(anchor)){directGo(target,reason);return}
-  turning=true;desktopCurlMode=true;desktopCurlSpread=isSpread;cancelAnimationFrame(animFrame);
-  gesture={direction,target,progress:0,startX:0,startY:0,startT:performance.now(),lastX:0,lastT:performance.now(),velocity:0,dx:0,maxAbsDx:0};
-  turnUnder.classList.remove('active');
-  if(direction==='next'){
-    const frontSrc=(isSpread?left:anchor).currentSrc||(isSpread?left:anchor).src;
-    setHref(softFrontImage,frontSrc);
-    setHref(paperGhost,pageURL(target));
-    if(isSpread&&target+1<=issue.pages){turnUnderImage.src=pageURL(target+1);turnUnder.classList.add('active')}
-    else if(!isSpread){turnUnderImage.src=pageURL(target);turnUnder.classList.add('active')}
-    softTurn.classList.add('active');styleCurl(0,'next');
-  }else{
-    const incoming=isSpread&&target+1<=issue.pages?pageURL(target+1):pageURL(target);
-    setHref(softFrontImage,incoming);setHref(paperGhost,pageURL(target));
-    softTurn.classList.add('active');styleCurl(0,'prev');
+  const currentPages=[...spread.querySelectorAll('.page')];
+  const currentLeft=spread.querySelector('.page-wrap.left .page'),currentRight=spread.querySelector('.page-wrap.right .page');
+  const isSpread=!!(currentLeft&&currentRight);
+  if(!isSpread){
+    // Cover/end pages are one sheet. Use the soft single-page turn without changing its size.
+    gesture={direction:null,target:null,progress:0,startX:0,startY:0,startT:performance.now(),lastX:0,lastT:performance.now(),velocity:0,dx:0,maxAbsDx:0};
+    if(!fitSoftTurn(currentPages[0])||turning){gesture=null;return}
+    turning=true;gesture.direction=direction;gesture.target=target;
+    if(direction==='next'){turnUnderImage.src=pageURL(target);turnUnder.classList.add('active');setHref(softFrontImage,pageURL(page));setHref(paperGhost,pageURL(page))}
+    else{setHref(softFrontImage,pageURL(target));setHref(paperGhost,pageURL(target))}
+    softTurn.classList.add('active');styleCurl(0,direction);
+    const from=page;animateCurl(1,()=>{page=target;render();track(reason,{from,to:page,desktop:true});requestAnimationFrame(()=>{softTurn.classList.remove('active');softTurn.style.opacity='';turnUnder.classList.remove('active');turning=false;gesture=null})});
+    return;
   }
-  const from=page;
-  requestAnimationFrame(()=>animateCurl(1,()=>{
+
+  const lr=currentLeft.getBoundingClientRect(),rr=currentRight.getBoundingClientRect(),b=book.getBoundingClientRect();
+  const W=(lr.width+rr.width)/2,H=Math.min(lr.height,rr.height);
+  if(W<2||H<2){directGo(target,reason);return}
+  turning=true;
+
+  const scene=document.createElement('div');scene.className='desktop-turn-scene';
+  scene.style.left=`${lr.left-b.left}px`;scene.style.top=`${lr.top-b.top}px`;scene.style.width=`${W*2}px`;scene.style.height=`${H}px`;
+
+  const underL=document.createElement('div');underL.className='desktop-turn-under-page left';
+  const underR=document.createElement('div');underR.className='desktop-turn-under-page right';
+  const ul=new Image(),ur=new Image();ul.draggable=ur.draggable=false;
+  const frontSrc=direction==='next'?pageURL(page+1):pageURL(target+1);
+  const backSrc=direction==='next'?pageURL(target):pageURL(page);
+  if(direction==='next'){
+    ul.src=target+1<=issue.pages?pageURL(target+1):pageURL(target);
+    ur.src=pageURL(page);
+  }else{
+    ul.src=pageURL(page+1);
+    ur.src=pageURL(target);
+  }
+  underL.appendChild(ul);underR.appendChild(ur);scene.append(underL,underR);
+
+  const strips=document.createElement('div');strips.className='desktop-turn-strips';scene.appendChild(strips);
+  const N=18,sw=W/N,stripEls=[];
+  for(let j=0;j<N;j++){
+    const s0=j*sw,s1=(j+1)*sw,s=(s0+s1)/2;
+    const el=document.createElement('div');el.className='desktop-turn-strip';
+    const baseLeft=W-s1;el.style.left=`${baseLeft}px`;el.style.width=`${sw+1.2}px`;
+    const front=document.createElement('div');front.className='desktop-strip-face desktop-strip-front';
+    const back=document.createElement('div');back.className='desktop-strip-face desktop-strip-back';
+    const fi=new Image(),bi=new Image();fi.draggable=bi.draggable=false;
+    fi.src=frontSrc;bi.src=backSrc;
+    fi.style.width=`${W}px`;bi.style.width=`${W}px`;
+    fi.style.left=`${-(W-s1)}px`;
+    bi.style.left=`${-s0}px`;
+    front.appendChild(fi);back.appendChild(bi);el.append(front,back);strips.appendChild(el);
+    stripEls.push({el,s,baseCenter:W-s,sw});
+  }
+  const crease=document.createElement('div');crease.className='desktop-turn-crease';scene.appendChild(crease);
+  book.appendChild(scene);
+
+  function deform(p){
+    p=clamp(p);const theta=Math.PI*p,bend=.72*Math.sin(Math.PI*p);
+    const samples=120,ds=W/samples,cx=[0],cz=[0];
+    for(let k=1;k<=samples;k++){
+      const sv=(k-.5)*ds,u=sv/W;
+      const a=theta+bend*(u-.44);
+      cx[k]=cx[k-1]+Math.cos(a)*ds;cz[k]=cz[k-1]+Math.sin(a)*ds;
+    }
+    const integralAt=(arr,s)=>{const q=clamp(s/W,0,1)*samples,i=Math.floor(q),f=q-i;if(i>=samples)return arr[samples];return mix(arr[i],arr[i+1],f)};
+    stripEls.forEach(({el,s,baseCenter})=>{
+      const u=s/W,a=theta+bend*(u-.44),ix=integralAt(cx,s),iz=integralAt(cz,s);
+      const mappedX=W-ix,dx=mappedX-baseCenter;
+      const light=.91+.09*Math.abs(Math.cos(a))+.035*Math.sin(Math.PI*p)*(u-.5);
+      el.style.transform=`translate3d(${dx}px,0,${iz*.42}px) rotateY(${-a}rad)`;
+      el.style.filter=`brightness(${light})`;
+    });
+    crease.style.opacity=String(.12+.38*Math.sin(Math.PI*p));
+  }
+
+  const from=page,start=performance.now(),fromP=direction==='next'?0:1,toP=direction==='next'?1:0;
+  function frame(now){
+    const t=clamp((now-start)/Math.max(360,turnMs)),e=easeSoft(t),p=mix(fromP,toP,e);
+    deform(p);
+    if(t<1){animFrame=requestAnimationFrame(frame);return}
     page=target;render();track(reason,{from,to:page,desktop:true});
-    requestAnimationFrame(()=>{softTurn.classList.remove('active');softTurn.style.opacity='';softTurn.style.transform='';turnUnder.classList.remove('active');desktopCurlMode=false;desktopCurlSpread=false;turning=false;gesture=null})
-  }))
+    scene.remove();turning=false;requestAnimationFrame(positionArrows)
+  }
+  deform(fromP);animFrame=requestAnimationFrame(frame)
 }
 function animatedButtonGo(target,direction,reason){target=Math.max(1,Math.min(issue.pages,target));if(target===page||turning)return;if(!mobile()){desktopAnimatedGo(target,direction,reason);return}gesture={direction:null,target:null,progress:0,startX:0,startY:0,startT:performance.now(),lastX:0,lastT:performance.now(),velocity:0,dx:0,maxAbsDx:0};if(!beginFingerTurn(direction)){gesture=null;turning=false;return}setTimeout(()=>finishTurn(true),38)}
 function next(){const step=spreadMode()?2:1;animatedButtonGo(page+step,'next','next')}function prev(){if(page<=1)return;const step=spreadMode()&&page>2?2:1;animatedButtonGo(page-step,'prev','prev')}
