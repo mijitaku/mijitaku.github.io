@@ -54,7 +54,7 @@ jobs:
 
           mkdir _site
 
-      rsync -a --exclude='.git' --exclude='.github' --exclude='_site' ./ _site/
+          rsync -a --exclude='.git' --exclude='.github' --exclude='_site' ./ _site/
 
           python - <<'PY'
 
