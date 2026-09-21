@@ -1,0 +1,297 @@
+name: Deploy Mijitaku
+
+on:
+
+  push:
+
+    branches:
+
+      - main
+
+  workflow_dispatch:
+
+permissions:
+
+  contents: read
+
+  pages: write
+
+  id-token: write
+
+concurrency:
+
+  group: pages
+
+  cancel-in-progress: false
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+
+        uses: actions/setup-python@v6
+
+        with:
+
+          python-version: "3.x"
+
+      - name: Install Pillow
+
+        run: pip install pillow
+
+      - name: Build site and OGP
+
+        run: |
+
+          mkdir _site
+
+          rsync -a \
+
+            --exclude='.git' \
+
+            --exclude='.github' \
+
+            --exclude='_site' \
+
+            ./ _site/
+
+          python - <<'PY'
+
+          import json
+
+          import re
+
+          import html
+
+          from pathlib import Path
+
+          from PIL import Image, ImageOps, ImageFilter, ImageEnhance
+
+          root = Path("_site")
+
+          text = (root / "site-data.js").read_text(encoding="utf-8")
+
+          m = re.search(
+
+              r"window\.MIJITAKU_SITE_DATA\s*=\s*(\{.*\})\s*;\s*$",
+
+              text,
+
+              re.S
+
+          )
+
+          if not m:
+
+              raise RuntimeError("site-data.js を読み取れませんでした")
+
+          data = json.loads(m.group(1))
+
+          issues = data["issues"]
+
+          latest = next(
+
+              (issue for issue in issues if issue.get("latest")),
+
+              issues[0]
+
+          )
+
+          og_dir = root / "og"
+
+          og_dir.mkdir(exist_ok=True)
+
+          for issue in issues:
+
+              cover = (
+
+                  root
+
+                  / "viewer"
+
+                  / "issues"
+
+                  / issue["folder"]
+
+                  / "p-01.webp"
+
+              )
+
+              if not cover.exists():
+
+                  continue
+
+              image = Image.open(cover).convert("RGB")
+
+              background = ImageOps.fit(
+
+                  image,
+
+                  (1200, 630),
+
+                  method=Image.Resampling.LANCZOS
+
+              )
+
+              background = background.filter(
+
+                  ImageFilter.GaussianBlur(28)
+
+              )
+
+              background = ImageEnhance.Brightness(
+
+                  background
+
+              ).enhance(0.55)
+
+              foreground = ImageOps.contain(
+
+                  image,
+
+                  (520, 590),
+
+                  method=Image.Resampling.LANCZOS
+
+              )
+
+              x = (1200 - foreground.width) // 2
+
+              y = (630 - foreground.height) // 2
+
+              background.paste(foreground, (x, y))
+
+              background.save(
+
+                  og_dir / f'{issue["id"]}.jpg',
+
+                  "JPEG",
+
+                  quality=90,
+
+                  optimize=True
+
+              )
+
+          issue_id = latest["id"]
+
+          short = html.escape(latest["short"])
+
+          title = f"月刊『身仕度』 {short}"
+
+          description = "月刊『身仕度』公式サイト。最新号を読む。"
+
+          image_url = (
+
+              f"https://mijitaku.github.io/og/{issue_id}.jpg"
+
+          )
+
+          block = f"""
+
+          <!-- MIJITAKU OGP START -->
+
+          <meta property="og:type" content="website">
+
+          <meta property="og:title" content="{title}">
+
+          <meta property="og:description" content="{description}">
+
+          <meta property="og:url" content="https://mijitaku.github.io/">
+
+          <meta property="og:image" content="{image_url}">
+
+          <meta property="og:image:width" content="1200">
+
+          <meta property="og:image:height" content="630">
+
+          <meta name="twitter:card" content="summary_large_image">
+
+          <meta name="twitter:title" content="{title}">
+
+          <meta name="twitter:description" content="{description}">
+
+          <meta name="twitter:image" content="{image_url}">
+
+          <meta name="twitter:image:alt" content="{short} 表紙">
+
+          <!-- MIJITAKU OGP END -->
+
+          """
+
+          index = root / "index.html"
+
+          page = index.read_text(encoding="utf-8")
+
+          page = re.sub(
+
+              r"<!-- MIJITAKU OGP START -->.*?<!-- MIJITAKU OGP END -->",
+
+              block,
+
+              page,
+
+              flags=re.S
+
+          )
+
+          if "MIJITAKU OGP START" not in page:
+
+              page = page.replace(
+
+                  "</head>",
+
+                  block + "\n</head>",
+
+                  1
+
+              )
+
+          index.write_text(page, encoding="utf-8")
+
+          print("Latest issue:", latest["label"])
+
+          print("OG image:", image_url)
+
+          PY
+
+      - name: Setup Pages
+
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+
+        uses: actions/upload-pages-artifact@v4
+
+        with:
+
+          path: _site
+
+  deploy:
+
+    environment:
+
+      name: github-pages
+
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+
+    needs: build
+
+    steps:
+
+      - name: Deploy
+
+        id: deployment
+
+        uses: actions/deploy-pages@v4
