@@ -11,11 +11,11 @@ window.MIJITAKU_SITE_DATA = {
   },
   "issues": [
     {
-      "id": "2026-00",
-      "label": "2026年0月号",
-      "short": "0月号",
-      "folder": "2026-00",
-      "pages": 00,
+      "id": "2026-10",
+      "label": "2026年10月号",
+      "short": "10月号",
+      "folder": "2026-10",
+      "pages": 56,
       "latest": true
     },
     {
