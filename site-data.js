@@ -10,7 +10,7 @@ window.MIJITAKU_SITE_DATA = {
     "nico": "https://x.com/nico_she_?s=11&t=mtYJcxfOAP7XxACw2ptSOg"
   },
   "issues": [
-     　{
+{
       "id": "2026-10",
       "label": "2026年10月号",
       "short": "10月号",
@@ -18,13 +18,12 @@ window.MIJITAKU_SITE_DATA = {
       "pages": 56,
       "latest": true
     },
- 　{
+{
       "id": "2026-09",
       "label": "2026年9月号",
       "short": "9月号",
       "folder": "2026-09",
-      "pages": 52,
-      "latest": true
+      "pages": 52
     },
     {
       "id": "2026-08",
