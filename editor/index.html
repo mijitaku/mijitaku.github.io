@@ -5,9 +5,9 @@
   <title>身仕度 組版室</title>
   <meta name="description" content="本文・画像を並べて、身仕度のPDFを作成。">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%23192544'/%3E%3Cpath d='M10 7v18M16 7v18M22 7v12' stroke='white' stroke-width='2'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="style.css?v=14">
+  <link rel="stylesheet" href="style.css?v=15">
   <script src="assets/fontkit.js" defer></script><script src="assets/pdf-lib.js" defer></script>
-  <script type="module" src="app.js?v=14"></script>
+  <script type="module" src="app.js?v=15"></script>
 </head>
 <body>
   <header class="masthead"><div class="brand"><span class="brand-mark" aria-hidden="true">身</span><h1>身仕度 <span>組版室</span></h1></div><span class="version">編集の試作版 <b>0.3</b></span></header>
@@ -69,6 +69,8 @@
     <section class="proof" aria-labelledby="preview-heading">
       <div class="section-heading"><h2 id="preview-heading">誌面を確認</h2><span class="step">03</span></div>
       <div class="proof-toolbar"><span id="page-info">まだ組版していません</span><div class="page-navigation"><button id="next" type="button" aria-label="次のページ" title="次のページ" disabled>‹</button><button id="previous" type="button" aria-label="前のページ" title="前のページ" disabled>›</button></div></div>
+      <div class="preview-options"><label for="preview-mode">表示</label><select id="preview-mode"><option value="single">1ページ</option><option value="spread">見開き（右綴じ）</option></select></div>
+      <p id="spread-help" class="spread-help" hidden>右から左へ読む見開きです。「奇数／偶数ページから」の設定に合わせて配置します。範囲外はPDF・画像には追加されません。スマートフォンは横向きにすると見やすくなります。</p>
       <div class="paper-area" id="paper-area"><div class="empty-paper"><div class="empty-lines" aria-hidden="true"></div><p>ここに縦書きの誌面が出ます</p><span>原稿を入れて「縦書きで確認」</span></div></div>
       <div class="field"><label for="pdf-name">保存するPDFのファイル名</label><input id="pdf-name" type="text" maxlength="120" placeholder="例：mijitaku_2026-11.pdf" autocomplete="off" spellcheck="false"><p>空欄なら作品名を使います。.pdf は自動で付きます。共有・ダウンロードの保存名に反映します。</p></div>
       <div class="export-bar"><p id="proof-note">本文の量に合わせて、自動でページが増えます。</p><button id="export" class="primary" type="button" disabled>PDFを作る</button></div>
