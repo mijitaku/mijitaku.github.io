@@ -9,6 +9,17 @@ const narrow=s=>s.replace(/[！-～]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x
 export function textUnits(text,{combineDigits=true,markup=true}={}){
   const chars=graphemes(text),units=[];
   for(let i=0;i<chars.length;){
+    if(markup&&chars[i]==='｜'){
+      const open=chars.indexOf('《',i+1),close=chars.indexOf('》',i+1);
+      if(open>i&&close>open&&!chars.slice(i+1,open).some(c=>/[\n｜]/u.test(c))){
+        const base=chars.slice(i+1,open).join(''),reading=chars.slice(open+1,close).join('');
+        if(!base||graphemes(base).length>20||/[\s\[\]《》｜]/u.test(base))throw new Error('ルビの親文字は、空白・記号を含まない1〜20文字にしてください。');
+        const parent=textUnits(base,{combineDigits,markup:false}),rubyChars=graphemes(reading);
+        if(!reading||rubyChars.length>60||rubyChars.length>parent.length*4||/[\s\[\]《》｜]/u.test(reading))throw new Error('読み仮名は親文字1枠につき4文字以内、全体で60文字以内にしてください。空白やルビの記号は使えません。');
+        const ruby={reading,total:parent.length};parent.forEach((u,n)=>units.push({...u,ruby,rubyIndex:n}));i=close+1;continue;
+      }
+      if(open>i&&!chars.slice(i+1,open).some(c=>/[\n｜]/u.test(c)))throw new Error('ルビの指定が閉じていません。｜漢字《かんじ》の形にしてください。');
+    }
     if(markup&&chars[i]==='['&&chars[i+1]==='['){
       let end=i+2;while(end<chars.length&&!(chars[end]===']'&&chars[end+1]===']'))end++;
       if(end===chars.length)throw new Error('組文字の指定が閉じていません。[[12]]のように囲んでください。');
@@ -45,6 +56,10 @@ export function breakLines(text,indent=true,combineDigits=true,rows=SPEC.rows){
       let end=Math.min(rows,chars.length);
       if(end<chars.length){
         while(end>1&&(NO_END.has(chars[end-1].text.at(-1))||NO_START.has(chars[end].text[0])))end--;
+        if(chars[end]?.ruby&&chars[end-1]?.ruby===chars[end].ruby){
+          const group=chars[end].ruby;let first=end;while(first>0&&chars[first-1].ruby===group)first--;
+          if(first>0)end=first;
+        }
       }
       lines.push(chars.slice(0,end));chars=chars.slice(end);
     }
@@ -69,15 +84,15 @@ export function paginate({title='',author='',body='',indent=true,startSide='odd'
     const odd=(index+(startSide==='even'?1:0))%2===0;
     const right=odd?SPEC.oddRight:SPEC.evenRight;
     const cells=[];
-    pageLines.forEach((line,col)=>line.forEach((unit,row)=>cells.push({char:unit.display,source:unit.text,kind:unit.kind,x:right-(col+offset)*SPEC.linePitch-SPEC.bodySize/2,y:SPEC.top+row*SPEC.pitch,size:SPEC.bodySize,role:'body'})));
+    pageLines.forEach((line,col)=>line.forEach((unit,row)=>cells.push({char:unit.display,source:unit.text,kind:unit.kind,ruby:unit.ruby,rubyIndex:unit.rubyIndex,x:right-(col+offset)*SPEC.linePitch-SPEC.bodySize/2,y:SPEC.top+row*SPEC.pitch,size:SPEC.bodySize,role:'body'})));
     if(index===0){
-      titleChars.forEach((unit,n)=>cells.push({char:unit.display,source:unit.text,kind:unit.kind,x:right-Math.floor(n/27)*SPEC.linePitch-13,y:184.249+(n%27)*26,size:26,role:'title'}));
-      const authorX=right-25.8-(titleColumns>1?SPEC.linePitch:0);
-      authorChars.forEach((unit,n)=>cells.push({char:unit.display,source:unit.text,kind:unit.kind,x:authorX-11,y:873.635-authorChars.length*22+n*22,size:22,role:'author'}));
+      titleChars.forEach((unit,n)=>cells.push({char:unit.display,source:unit.text,kind:unit.kind,ruby:unit.ruby,rubyIndex:unit.rubyIndex,x:right-Math.floor(n/27)*SPEC.linePitch-13,y:184.249+(n%27)*26,size:26,role:'title'}));
+      const authorX=right-25.8-(authorChars.some(u=>u.ruby)?12:0)-(titleColumns>1?SPEC.linePitch:0);
+      authorChars.forEach((unit,n)=>cells.push({char:unit.display,source:unit.text,kind:unit.kind,ruby:unit.ruby,rubyIndex:unit.rubyIndex,x:authorX-11,y:873.635-authorChars.length*22+n*22,size:22,role:'author'}));
     }
     pages.push({cells,lines:pageLines,offset,index,side:odd?'odd':'even'});
   }
-  return {title,author,body:normalizeBody(body),indent,startSide,combineDigits,pages,characterCount:lines.flat().reduce((n,u)=>n+graphemes(u.text.replace(/\s/g,'')).length,0)};
+  return {title,author,body:normalizeBody(body),indent,startSide,combineDigits,pages:withRuby(pages),characterCount:lines.flat().reduce((n,u)=>n+graphemes(u.text.replace(/\s/g,'')).length,0)};
 }
 export function paginateAfterword({title='あとがき',author='',body='',indent=true,startSide='odd',combineDigits=true}){
   title=title.trim().normalize('NFC')||'あとがき';author=author.trim().normalize('NFC');
@@ -89,14 +104,30 @@ export function paginateAfterword({title='あとがき',author='',body='',indent
   const heading=textUnits(title,{combineDigits}),name=textUnits(author,{combineDigits});
   for(let cursor=0;cursor<lines.length;cursor+=8){
     const index=pages.length,cells=[],pageLines=lines.slice(cursor,cursor+8);
-    pageLines.forEach((line,col)=>line.forEach((unit,row)=>cells.push({char:unit.display,source:unit.text,kind:unit.kind,x:500-col*38,y:130+row*18.5,size:20,role:'body'})));
-    heading.forEach((unit,n)=>cells.push({char:unit.display,source:unit.text,kind:unit.kind,x:586,y:186+n*24,size:24,role:'title'}));
-    if(cursor+8>=lines.length)name.forEach((unit,n)=>cells.push({char:unit.display,source:unit.text,kind:unit.kind,x:500-(pageLines.length+1)*38,y:876-name.length*22+n*22,size:22,role:'author'}));
+    pageLines.forEach((line,col)=>line.forEach((unit,row)=>cells.push({char:unit.display,source:unit.text,kind:unit.kind,ruby:unit.ruby,rubyIndex:unit.rubyIndex,x:500-col*38,y:130+row*18.5,size:20,role:'body'})));
+    heading.forEach((unit,n)=>cells.push({char:unit.display,source:unit.text,kind:unit.kind,ruby:unit.ruby,rubyIndex:unit.rubyIndex,x:586,y:186+n*24,size:24,role:'title'}));
+    if(cursor+8>=lines.length)name.forEach((unit,n)=>cells.push({char:unit.display,source:unit.text,kind:unit.kind,ruby:unit.ruby,rubyIndex:unit.rubyIndex,x:500-(pageLines.length+1)*38,y:876-name.length*22+n*22,size:22,role:'author'}));
     pages.push({cells,lines:pageLines,index,side:(index+(startSide==='even'?1:0))%2?'even':'odd',layout:'afterword'});
   }
-  return {title,author,body:normalizeBody(body),indent,startSide,combineDigits,pages};
+  return {title,author,body:normalizeBody(body),indent,startSide,combineDigits,pages:withRuby(pages)};
 }
-export function prefaceLength(text){return graphemes(normalizeBody(text).replace(/\[\[([^\n]*?)\]\]/g,'$1').replace(/\n/g,'')).length;}
+export function plainText(text){return normalizeBody(text).replace(/｜([^｜《》\n]+)《[^《》\n]*》/g,'$1').replace(/\[\[([^\n]*?)\]\]/g,'$1');}
+export function prefaceLength(text){return graphemes(plainText(text).replace(/\n/g,'')).length;}
+// Ruby uses ordinary positioned cells, so preview, PDF and WebP share one layout.
+function withRuby(pages){
+  for(const page of pages){
+    const groups=new Map();
+    for(const cell of page.cells){if(!cell.ruby)continue;let columns=groups.get(cell.ruby);if(!columns)groups.set(cell.ruby,columns=new Map());const key=cell.x+':'+cell.role;if(!columns.has(key))columns.set(key,[]);columns.get(key).push(cell);}
+    for(const [ruby,columns] of groups)for(const cells of columns.values()){
+      const first=cells[0],last=cells.at(-1),reading=graphemes(ruby.reading);
+      const start=Math.floor(first.rubyIndex*reading.length/ruby.total),end=Math.floor((last.rubyIndex+1)*reading.length/ruby.total),part=reading.slice(start,end);
+      if(!part.length)continue;
+      const span=last.y-first.y+first.size,size=Math.min(first.size*.42,span/part.length),top=first.y+(span-part.length*size)/2;
+      part.forEach((char,n)=>page.cells.push({char,source:char,kind:'normal',x:first.x+first.size+1,y:top+n*size,size,role:'ruby'}));
+    }
+  }
+  return pages;
+}
 export function paginateReader({title='',author='',body='',preface='',indent=true,startSide='odd',combineDigits=true}){
   title=title.trim().normalize('NFC');author=author.trim().normalize('NFC');
   if(!title)throw new Error('読者寄稿のタイトルを入力してください。');
@@ -109,7 +140,7 @@ export function paginateReader({title='',author='',body='',preface='',indent=tru
   const intro=breakLines(preface,false,combineDigits,32);
   if(intro.length>5)throw new Error('前書きの改行・空行を減らして、5行以内に収めてください。');
   const lines=breakLines(body,indent,combineDigits),pages=[];
-  const add=(cells,unit,x,y,size,role)=>cells.push({char:unit.display,source:unit.text,kind:unit.kind,x,y,size,role});
+  const add=(cells,unit,x,y,size,role)=>cells.push({char:unit.display,source:unit.text,kind:unit.kind,ruby:unit.ruby,rubyIndex:unit.rubyIndex,x,y,size,role});
   for(let cursor=0;cursor<lines.length;){
     const index=pages.length,first=index===0,odd=(index+(startSide==='even'?1:0))%2===0;
     const pageLines=lines.slice(cursor,cursor+(first?7:SPEC.columns));cursor+=pageLines.length;
@@ -118,7 +149,7 @@ export function paginateReader({title='',author='',body='',preface='',indent=tru
     const page={cells,lines:pageLines,index,side:odd?'odd':'even',layout:'reader'};
     if(first){
       textUnits(title,{combineDigits}).forEach((u,n)=>add(cells,u,422,184+n*26,26,'title'));
-      const name=textUnits(author,{combineDigits});name.forEach((u,n)=>add(cells,u,400,873.635-name.length*22+n*22,22,'author'));
+      const name=textUnits(author,{combineDigits});name.forEach((u,n)=>add(cells,u,name.some(c=>c.ruby)?388:400,873.635-name.length*22+n*22,22,'author'));
       textUnits('まえがき',{markup:false}).forEach((u,n)=>add(cells,u,533+n*30,343,16,'preface-heading'));
       intro.forEach((line,col)=>line.forEach((u,row)=>add(cells,u,636-col*25,382+row*17,16,'preface')));
       page.images=[{data:readerLogo,x:510,y:128,width:176,height:176}];
@@ -126,14 +157,14 @@ export function paginateReader({title='',author='',body='',preface='',indent=tru
     }
     pages.push(page);
   }
-  return {title,author,body:normalizeBody(body),preface,indent,startSide,combineDigits,pages};
+  return {title,author,body:normalizeBody(body),preface,indent,startSide,combineDigits,pages:withRuby(pages)};
 }
 export function paginateToc({entries=[]}){
   const rows=entries.filter(e=>e.title?.trim()||e.author?.trim());
   if(!rows.length)throw new Error('目次に作品タイトルを入力してください。');
   if(rows.length>10)throw new Error('目次は、あとがきを含めて10項目までです。');
   const cells=[],top=235,bottom=824,pitch=Math.min(48,480/Math.max(1,rows.length-1));
-  const add=(u,x,y,size,role)=>cells.push({char:u.display,source:u.text,kind:u.kind,x,y,size,role});
+  const add=(u,x,y,size,role)=>cells.push({char:u.display,source:u.text,kind:u.kind,ruby:u.ruby,rubyIndex:u.rubyIndex,x,y,size,role});
   textUnits('目次').forEach((u,n)=>add(u,654,264+n*26,26,'toc-heading'));
   rows.forEach((entry,index)=>{
     if(!entry.title?.trim())throw new Error(`目次の${index+1}番目にタイトルを入力してください。`);
@@ -149,7 +180,7 @@ export function paginateToc({entries=[]}){
     author.forEach((u,n)=>add(u,x,authorTop+n*22,22,'toc-author'));
     label.forEach((u,n)=>add(u,x+4,labelTop+n*14,14,'toc-reader'));
   });
-  return {title:'目次',author:'',pages:[{cells,index:0,layout:'toc'}]};
+  return {title:'目次',author:'',pages:withRuby([{cells,index:0,layout:'toc'}])};
 }
 export function isSideways(char){return !/^[0-9０-９!?！？]+$/u.test(char)&&/^[\u0021-\u007e\u00a1-\u024f]/u.test(char);}
 const HORIZONTAL_FEATURES={kern:false,liga:false,clig:false};

@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%23192544'/%3E%3Cpath d='M10 7v18M16 7v18M22 7v12' stroke='white' stroke-width='2'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css?v=17">
   <script src="assets/fontkit.js" defer></script><script src="assets/pdf-lib.js" defer></script>
-  <script type="module" src="app.js?v=19"></script>
+  <script type="module" src="app.js?v=20"></script>
 </head>
 <body>
   <header class="masthead"><div class="brand"><span class="brand-mark" aria-hidden="true">身</span><h1>身仕度 <span>組版室</span></h1></div><span class="version">編集の試作版 <b>0.3</b></span></header>
@@ -31,13 +31,13 @@
     <section class="manuscript" aria-labelledby="input-heading">
       <div class="section-heading"><h2 id="input-heading">原稿を入れる</h2><span class="step">02</span></div>
       <form id="manuscript-form">
-        <div id="reader-fields" hidden><p>読者寄稿ロゴは自動で入ります。前書き・タイトル・作者名は1ページ目、本文は2ページ目以降にも続きます。</p><div class="field"><div class="label-row"><label for="preface">まえがき</label><span id="preface-count">0 / 150文字</span></div><textarea id="preface" rows="5" maxlength="500" placeholder="寄稿者の前書きを入力してください。" spellcheck="false"></textarea><p>150文字まで（改行・組文字の括弧を除く）。改行・空行も誌面に反映します。</p></div></div>
+        <div id="reader-fields" hidden><p>読者寄稿ロゴは自動で入ります。前書き・タイトル・作者名は1ページ目、本文は2ページ目以降にも続きます。</p><div class="field"><div class="label-row"><label for="preface">まえがき</label><span id="preface-count">0 / 150文字</span></div><textarea id="preface" rows="5" maxlength="500" placeholder="寄稿者の前書きを入力してください。" spellcheck="false"></textarea><p>150文字まで（改行・組文字の括弧・ルビの読み仮名を除く）。改行・空行も誌面に反映します。</p></div></div>
         <p id="afterword-help" hidden>右に見出し、中央に本文を置き、本文の末尾の左側に著者名を下揃えで載せます。44字 × 8行。長い文章は次のページに続き、名前は最後のページに入ります。</p>
         <div class="field"><label for="title">作品タイトル</label><input id="title" type="text" maxlength="54" placeholder="例：センスレス・ワンダー" autocomplete="off"></div>
         <div class="field"><label for="author">作者名</label><input id="author" type="text" maxlength="18" placeholder="例：山椒魚" autocomplete="off"></div>
         <div class="field body-field"><div class="label-row"><label for="body">本文</label><span id="char-count">0字</span></div><textarea id="body" placeholder="原稿をそのまま貼り付けてください。&#10;&#10;改行と空行は、誌面にも反映されます。" maxlength="50000" spellcheck="false"></textarea></div>
-        <div class="combine-tools"><button id="combine-selection" type="button">組文字にする</button><button id="uncombine-selection" type="button">組文字を解除</button></div>
-        <p class="combine-help">各入力欄の1〜4文字を選択して「組文字にする」。[[km]] のように囲むと、1文字分の枠に横並びで入ります。解除は囲んだ部分にカーソルを置いて押してください。</p>
+        <div class="combine-tools"><button id="combine-selection" type="button">組文字にする</button><button id="uncombine-selection" type="button">組文字を解除</button><button id="ruby-selection" type="button">ルビを付ける</button><button id="unruby-selection" type="button">ルビを解除</button></div>
+        <p class="combine-help">ルビは文字を選択して「ルビを付ける」を押し、読み仮名を入力します。｜漢字《かんじ》の直接入力もできます。変更・解除は指定内にカーソルを置いて押してください。<br>各入力欄の1〜4文字を選択して「組文字にする」。[[km]] のように囲むと、1文字分の枠に横並びで入ります。解除は囲んだ部分にカーソルを置いて押してください。</p>
         <div class="form-actions"><button type="submit" class="primary" id="preview-button">縦書きで確認</button><button type="button" class="quiet" id="sample-button">試しの原稿を入れる</button></div>
         <details class="settings"><summary>組み方・フォント</summary><div class="settings-content">
           <label class="check"><input id="indent" type="checkbox" checked> 段落の頭を1字下げる</label>

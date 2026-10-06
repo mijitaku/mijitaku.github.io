@@ -1,7 +1,7 @@
 import {saveDraft,readDraft,makeProject,validateProject,bytesToBase64,base64ToBytes} from './storage.js?v=19';
 import {createWebZip} from './web-export.js?v=16';
-import {paginate,pageSvg,missingCharacters,createPdf,graphemes,prefaceLength} from './layout.js?v=19';
-import {buildBook,moveItem,imageSvg,readImageFile} from './book.js?v=19';
+import {paginate,pageSvg,missingCharacters,createPdf,graphemes,prefaceLength,plainText,textUnits} from './layout.js?v=20';
+import {buildBook,moveItem,imageSvg,readImageFile} from './book.js?v=20';
 import {readPdfFile} from './pdf-import.js?v=16';
 const $=id=>document.getElementById(id);
 let font,fontBytes,proof,currentPage=0,busy=false,objectUrl,revision=0,pdfFile,sharing=false,pdfOutput=null;
@@ -38,14 +38,14 @@ function renderEditor(){
   $('title').maxLength=1000;
   if(image){$('image-title').value=item.title;$('image-fit').value=item.fit;$('image-description').textContent=`${item.image.name}・${item.image.width} × ${item.image.height}px。1枚を1ページにします。`;}
   else if(item?.kind==='text'){for(const id of ['title','author','body'])$(id).value=item[id];$('indent').checked=item.indent;$('combine-digits').checked=item.combineDigits;}
-  $('char-count').textContent=image?'':graphemes(($('body').value||'').replace(/\[\[([^\n]*?)\]\]/g,'$1').replace(/\s/g,'')).length.toLocaleString('ja')+'字';
+  $('char-count').textContent=image?'':graphemes(plainText($('body').value||'').replace(/\s/g,'')).length.toLocaleString('ja')+'字';
 }
 function selectItem(id){saveCurrent();selectedId=id;scheduleDraft();renderEditor();renderList();if(proof){const index=proof.pages.findIndex(p=>p.itemId===id);if(index>=0){currentPage=index;showPage();}}}
 function message(text,error=false){$('status').textContent=text;$('status').classList.toggle('error',error);}
 function setBusy(value){busy=value;$('preview-button').disabled=value||!font;$('sample-button').disabled=value;$('export').disabled=value||!proof;$('export-web').disabled=value||!proof;$('font-file').disabled=value;for(const id of ['import-project','backup-project','save-draft','clear-project','undo-clear','add-toc','toc-import','toc-add','toc-preview','add-text','add-reader','add-image','add-afterword','replace-image','image-preview','add-pdf','replace-pdf','pdf-preview','pdf-title','pdf-author','pdf-kind'])$(id).disabled=value;renderList();if(selectedItem()?.kind==='toc')renderToc();}
 function inputs(){return {preface:$('preface').value,title:$('title').value,author:$('author').value,body:$('body').value,indent:$('indent').checked,startSide:$('start-side').value,combineDigits:$('combine-digits').checked};}
 function updatePrefaceCount(){$('preface-count').textContent=prefaceLength($('preface').value)+' / 150文字';}
-function invalidate(){saveCurrent();scheduleDraft();updatePrefaceCount();revision++;proof=null;pdfFile=null;$('export').disabled=true;$('export-web').disabled=true;$('download-area').hidden=true;$('web-download-area').hidden=true;webFile=null;$('proof-note').textContent='内容を変更しました。「並び順で確認」で更新してください。';$('page-info').textContent='変更は未反映';$('char-count').textContent=graphemes($('body').value.replace(/\[\[([^\n]*?)\]\]/g,'$1').replace(/\s/g,'')).length.toLocaleString('ja')+'字';renderList();}
+function invalidate(){saveCurrent();scheduleDraft();updatePrefaceCount();revision++;proof=null;pdfFile=null;$('export').disabled=true;$('export-web').disabled=true;$('download-area').hidden=true;$('web-download-area').hidden=true;webFile=null;$('proof-note').textContent='内容を変更しました。「並び順で確認」で更新してください。';$('page-info').textContent='変更は未反映';$('char-count').textContent=graphemes(plainText($('body').value).replace(/\s/g,'')).length.toLocaleString('ja')+'字';renderList();}
 function showPage(){
   if(!proof)return;
   const area=$('paper-area'),spread=previewMode==='spread',range=previewRange(currentPage,proof.pages.length,proofStartSide,spread);
@@ -207,6 +207,7 @@ function replaceTextRange(input,start,end,text,selectStart,selectEnd){
 function combineText(input){
   if(busy)return;
   const start=input.selectionStart,end=input.selectionEnd,selected=input.value.slice(start,end);
+  if(rubyAt(input,start,end)){message('ルビのある文字は、先にルビを解除してから組文字にしてください。',true);return;}
   if(!selected||graphemes(selected).length>4||/[\s\[\]]/u.test(selected)){message('横に並べたい1〜4文字を選択してください。空白・改行・括弧 [[ ]] は含められません。',true);return;}
   for(const match of input.value.matchAll(/\[\[([^\n]*?)\]\]/g))if(start<match.index+match[0].length&&end>match.index){message('すでに組文字になっています。変更する場合は一度解除してください。',true);return;}
   replaceTextRange(input,start,end,'[['+selected+']]',start+2,end+2);message('選んだ文字を組文字にしました。プレビューで確認してください。');
@@ -221,13 +222,37 @@ function uncombineText(input){
   message('解除したい [[組文字]] の中にカーソルを置いてください。',true);
 }
 function addCombineTools(input,label){
-  const bar=document.createElement('div');bar.className='combine-tools';
-  for(const [text,action] of [['組文字にする',combineText],['組文字を解除',uncombineText]]){
+  const bar=document.createElement('div');bar.className='combine-tools';bar.style.marginTop='8px';
+  for(const [text,action] of [['組文字にする',combineText],['組文字を解除',uncombineText],['ルビを付ける',rubyText],['ルビを解除',unrubyText]]){
     const button=document.createElement('button');button.type='button';button.textContent=text;button.setAttribute('aria-label',label+'：'+text);button.addEventListener('pointerdown',event=>event.preventDefault());button.addEventListener('click',()=>action(input));bar.append(button);
   }
   input.parentElement.append(bar);
 }
-for(const [id,label] of [['title','作品タイトル'],['author','作者名'],['preface','まえがき'],['pdf-title','PDFの目次用タイトル'],['pdf-author','PDFの目次用作者名']]){const input=$(id);input.maxLength=1000;addCombineTools(input,label);}
+function rubyAt(input,start=input.selectionStart,end=input.selectionEnd){
+  return Array.from(input.value.matchAll(/｜([^｜《》\n]+)《([^《》\n]*)》/g)).find(m=>start===end?start>=m.index&&start<m.index+m[0].length:start<m.index+m[0].length&&end>m.index);
+}
+function rubyText(input){
+  if(busy)return;
+  let start=input.selectionStart,end=input.selectionEnd;const existing=rubyAt(input,start,end);
+  if(existing&&(start<existing.index||end>existing.index+existing[0].length)){message('ルビは1か所ずつ変更してください。',true);return;}
+  const base=existing?existing[1]:input.value.slice(start,end);
+  if(!base||graphemes(base).length>20||/[\s\[\]｜《》]/u.test(base)){message('ルビを付ける1〜20文字を選択してください。組文字・空白・改行は含められません。',true);return;}
+  for(const m of input.value.matchAll(/\[\[([^\n]*?)\]\]/g))if(start<m.index+m[0].length&&end>m.index){message('組文字を解除してからルビを付けてください。',true);return;}
+  const reading=window.prompt('「'+base+'」の読み仮名を入力してください。',existing?.[2]||'');if(reading===null)return;
+  if(!reading.trim()||/[\s\[\]《》｜]/u.test(reading.trim())){message('読み仮名には空白・改行・ルビの記号を含めないでください。',true);return;}
+  const marked='｜'+base+'《'+reading.trim()+'》';
+  try{textUnits(marked);}catch(error){message(error.message,true);return;}
+  if(existing){start=existing.index;end=start+existing[0].length;}
+  replaceTextRange(input,start,end,marked,start+1,start+1+base.length);message('ルビを付けました。プレビューで確認してください。');
+}
+function unrubyText(input){
+  if(busy)return;const match=rubyAt(input);
+  if(!match){message('解除したいルビの指定内にカーソルを置いてください。',true);return;}
+  replaceTextRange(input,match.index,match.index+match[0].length,match[1],match.index,match.index+match[1].length);message('ルビを解除しました。');
+}
+for(const [id,label] of [['title','作品タイトル'],['author','作者名'],['preface','まえがき'],['pdf-title','PDFの目次用タイトル'],['pdf-author','PDFの目次用作者名']]){const input=$(id);input.maxLength=id==='preface'?2000:1000;addCombineTools(input,label);}
+$('ruby-selection').addEventListener('click',()=>rubyText($('body')));
+$('unruby-selection').addEventListener('click',()=>unrubyText($('body')));
 $('combine-selection').addEventListener('click',()=>combineText($('body')));
 $('uncombine-selection').addEventListener('click',()=>uncombineText($('body')));
 $('previous').addEventListener('click',()=>{if(!proof)return;const range=previewRange(currentPage,proof.pages.length,proofStartSide,previewMode==='spread');if(range.start>0){currentPage=range.start-1;showPage();}});
