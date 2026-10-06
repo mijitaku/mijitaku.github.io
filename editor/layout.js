@@ -55,9 +55,9 @@ export function paginate({title='',author='',body='',indent=true,startSide='odd'
   title=title.trim().normalize('NFC');author=author.trim().normalize('NFC');
   if(!body.trim())throw new Error('本文を入力してください。');
   if(graphemes(body).length>50000)throw new Error('本文は50,000字までにしてください。');
-  if(graphemes(title).length>54)throw new Error('作品タイトルは54字までにしてください。');
-  if(graphemes(author).length>18)throw new Error('作者名は18字までにしてください。');
-  const titleChars=textUnits(title,{combineDigits,markup:false}),authorChars=textUnits(author,{combineDigits,markup:false});
+  if(prefaceLength(title)>54)throw new Error('作品タイトルは54字までにしてください。');
+  if(prefaceLength(author)>18)throw new Error('作者名は18字までにしてください。');
+  const titleChars=textUnits(title,{combineDigits}),authorChars=textUnits(author,{combineDigits});
   const titleColumns=titleChars.length?Math.ceil(titleChars.length/27):0;
   const firstReserve=title||author?Math.max(titleColumns,1)+2:0;
   const lines=breakLines(body,indent,combineDigits);
@@ -83,10 +83,10 @@ export function paginateAfterword({title='あとがき',author='',body='',indent
   title=title.trim().normalize('NFC')||'あとがき';author=author.trim().normalize('NFC');
   if(!body.trim())throw new Error('あとがきの本文を入力してください。');
   if(graphemes(body).length>50000)throw new Error('本文は50,000字までにしてください。');
-  if(graphemes(title).length>18)throw new Error('あとがきの見出しは18字までにしてください。');
-  if(graphemes(author).length>18)throw new Error('作者名は18字までにしてください。');
+  if(prefaceLength(title)>18)throw new Error('あとがきの見出しは18字までにしてください。');
+  if(prefaceLength(author)>18)throw new Error('作者名は18字までにしてください。');
   const lines=breakLines(body,indent,combineDigits,44),pages=[];
-  const heading=textUnits(title,{combineDigits,markup:false}),name=textUnits(author,{combineDigits,markup:false});
+  const heading=textUnits(title,{combineDigits}),name=textUnits(author,{combineDigits});
   for(let cursor=0;cursor<lines.length;cursor+=8){
     const index=pages.length,cells=[],pageLines=lines.slice(cursor,cursor+8);
     pageLines.forEach((line,col)=>line.forEach((unit,row)=>cells.push({char:unit.display,source:unit.text,kind:unit.kind,x:500-col*38,y:130+row*18.5,size:20,role:'body'})));
@@ -102,8 +102,8 @@ export function paginateReader({title='',author='',body='',preface='',indent=tru
   if(!title)throw new Error('読者寄稿のタイトルを入力してください。');
   if(!author)throw new Error('読者寄稿の作者名を入力してください。');
   if(!body.trim())throw new Error('読者寄稿の本文を入力してください。');
-  if(graphemes(title).length>27)throw new Error('読者寄稿のタイトルは27字までにしてください。');
-  if(graphemes(author).length>18)throw new Error('作者名は18字までにしてください。');
+  if(prefaceLength(title)>27)throw new Error('読者寄稿のタイトルは27字までにしてください。');
+  if(prefaceLength(author)>18)throw new Error('作者名は18字までにしてください。');
   if(graphemes(body).length>50000)throw new Error('本文は50,000字までにしてください。');
   if(prefaceLength(preface)>150)throw new Error('前書きは150文字までにしてください。');
   const intro=breakLines(preface,false,combineDigits,32);
@@ -117,8 +117,8 @@ export function paginateReader({title='',author='',body='',preface='',indent=tru
     pageLines.forEach((line,col)=>line.forEach((u,row)=>add(cells,u,right-col*SPEC.linePitch-SPEC.bodySize/2,SPEC.top+row*SPEC.pitch,SPEC.bodySize,'body')));
     const page={cells,lines:pageLines,index,side:odd?'odd':'even',layout:'reader'};
     if(first){
-      textUnits(title,{combineDigits,markup:false}).forEach((u,n)=>add(cells,u,422,184+n*26,26,'title'));
-      const name=textUnits(author,{combineDigits,markup:false});name.forEach((u,n)=>add(cells,u,400,873.635-name.length*22+n*22,22,'author'));
+      textUnits(title,{combineDigits}).forEach((u,n)=>add(cells,u,422,184+n*26,26,'title'));
+      const name=textUnits(author,{combineDigits});name.forEach((u,n)=>add(cells,u,400,873.635-name.length*22+n*22,22,'author'));
       textUnits('まえがき',{markup:false}).forEach((u,n)=>add(cells,u,533+n*30,343,16,'preface-heading'));
       intro.forEach((line,col)=>line.forEach((u,row)=>add(cells,u,636-col*25,382+row*17,16,'preface')));
       page.images=[{data:readerLogo,x:510,y:128,width:176,height:176}];
@@ -137,7 +137,7 @@ export function paginateToc({entries=[]}){
   textUnits('目次').forEach((u,n)=>add(u,654,264+n*26,26,'toc-heading'));
   rows.forEach((entry,index)=>{
     if(!entry.title?.trim())throw new Error(`目次の${index+1}番目にタイトルを入力してください。`);
-    const title=textUnits(entry.title.trim().normalize('NFC'),{markup:false}),author=textUnits((entry.author||'').trim().normalize('NFC'),{markup:false});
+    const title=textUnits(entry.title.trim().normalize('NFC')),author=textUnits((entry.author||'').trim().normalize('NFC'));
     if(title.length>54||author.length>18)throw new Error('目次のタイトルは54字、作者名は18字までにしてください。');
     const x=596-index*pitch,authorTop=bottom-author.length*22;
     const label=entry.reader&&author.length?textUnits('読者寄稿'):[];

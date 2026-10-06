@@ -1,7 +1,7 @@
-import {saveDraft,readDraft,makeProject,validateProject,bytesToBase64,base64ToBytes} from './storage.js?v=18';
+import {saveDraft,readDraft,makeProject,validateProject,bytesToBase64,base64ToBytes} from './storage.js?v=19';
 import {createWebZip} from './web-export.js?v=16';
-import {paginate,pageSvg,missingCharacters,createPdf,graphemes,prefaceLength} from './layout.js?v=16';
-import {buildBook,moveItem,imageSvg,readImageFile} from './book.js?v=16';
+import {paginate,pageSvg,missingCharacters,createPdf,graphemes,prefaceLength} from './layout.js?v=19';
+import {buildBook,moveItem,imageSvg,readImageFile} from './book.js?v=19';
 import {readPdfFile} from './pdf-import.js?v=16';
 const $=id=>document.getElementById(id);
 let font,fontBytes,proof,currentPage=0,busy=false,objectUrl,revision=0,pdfFile,sharing=false,pdfOutput=null;
@@ -35,7 +35,7 @@ function renderEditor(){
   if(pdf){const extra=item.tocInclude===false;$('input-heading').textContent=extra?'作品外PDFを入れる':'PDF作品を入れる';$('pdf-kind').value=extra?'extra':'work';$('pdf-title').value=item.title;$('pdf-author').value=item.author||'';$('pdf-description').textContent=`${item.pdf.name}・全${item.pdf.pages.length}ページ`;$('pdf-toc-help').textContent=(extra?'このPDFは目次の自動取り込みから除外します。':'このPDFは1作品として、タイトルと作者名を目次に取り込みます。')+' すでに作った目次へ反映するには、目次の「並べた作品から取り込む」を押してください。';document.querySelector('label[for="pdf-title"]').textContent=extra?'一覧に表示する名前':'作品タイトル（一覧・目次用）';$('pdf-author').closest('.field').hidden=extra;}
   $('afterword-help').hidden=item?.layout!=='afterword';
   $('reader-fields').hidden=item?.layout!=='reader';$('preface').value=item?.preface||'';updatePrefaceCount();
-  $('title').maxLength=item?.layout==='reader'?27:item?.layout==='afterword'?18:54;
+  $('title').maxLength=1000;
   if(image){$('image-title').value=item.title;$('image-fit').value=item.fit;$('image-description').textContent=`${item.image.name}・${item.image.width} × ${item.image.height}px。1枚を1ページにします。`;}
   else if(item?.kind==='text'){for(const id of ['title','author','body'])$(id).value=item[id];$('indent').checked=item.indent;$('combine-digits').checked=item.combineDigits;}
   $('char-count').textContent=image?'':graphemes(($('body').value||'').replace(/\[\[([^\n]*?)\]\]/g,'$1').replace(/\s/g,'')).length.toLocaleString('ja')+'字';
@@ -101,7 +101,7 @@ function renderToc(){
     const heading=document.createElement('strong');heading.textContent=`${index+1}番目`;row.append(heading);
     for(const [key,labelText,max] of [['title','タイトル',54],['author','作者名',18]]){
       const label=document.createElement('label');label.textContent=labelText;
-      const input=document.createElement('input');input.type='text';input.maxLength=max;input.value=entry[key];input.dataset.index=index;input.dataset.field=key;input.disabled=busy;label.append(input);row.append(label);
+      const input=document.createElement('input');input.type='text';input.maxLength=1000;input.value=entry[key];input.dataset.index=index;input.dataset.field=key;input.disabled=busy;label.append(input);row.append(label);addCombineTools(input,labelText);
     }
     const label=document.createElement('label');label.className='check';const input=document.createElement('input');input.type='checkbox';input.checked=entry.reader;input.dataset.index=index;input.dataset.field='reader';input.disabled=busy;label.append(input,document.createTextNode('読者寄稿'));row.append(label);
     for(const [action,text,disabled] of [['up','前へ',index===0],['down','後ろへ',index===item.entries.length-1],['remove','削除',false]]){const button=document.createElement('button');button.type='button';button.textContent=text;button.dataset.index=index;button.dataset.action=action;button.disabled=busy||disabled;row.append(button);}
@@ -201,24 +201,35 @@ for(const id of ['image-title','image-fit'])$(id).addEventListener(id==='image-t
 });
 for(const id of ['title','author','body','preface'])$(id).addEventListener('input',invalidate);
 for(const id of ['indent','start-side','combine-digits'])$(id).addEventListener('change',invalidate);
-function replaceBodyRange(start,end,text,selectStart,selectEnd){
-  const body=$('body');body.value=body.value.slice(0,start)+text+body.value.slice(end);body.focus();body.setSelectionRange?.(selectStart,selectEnd);invalidate();
+function replaceTextRange(input,start,end,text,selectStart,selectEnd){
+  input.value=input.value.slice(0,start)+text+input.value.slice(end);input.focus();input.setSelectionRange?.(selectStart,selectEnd);input.dispatchEvent(new window.Event('input',{bubbles:true}));
 }
-$('combine-selection').addEventListener('click',()=>{
+function combineText(input){
   if(busy)return;
-  const body=$('body'),start=body.selectionStart,end=body.selectionEnd,selected=body.value.slice(start,end);
-  if(!selected||graphemes(selected).length>4||/[\s\[\]]/u.test(selected)){message('本文で、横に並べたい1〜4文字を選択してください。空白・改行・括弧 [[ ]] は含められません。',true);return;}
-  replaceBodyRange(start,end,'[['+selected+']]',start+2,end+2);message('選んだ文字を組文字にしました。「縦書きで確認」で反映できます。');
-});
-$('uncombine-selection').addEventListener('click',()=>{
+  const start=input.selectionStart,end=input.selectionEnd,selected=input.value.slice(start,end);
+  if(!selected||graphemes(selected).length>4||/[\s\[\]]/u.test(selected)){message('横に並べたい1〜4文字を選択してください。空白・改行・括弧 [[ ]] は含められません。',true);return;}
+  for(const match of input.value.matchAll(/\[\[([^\n]*?)\]\]/g))if(start<match.index+match[0].length&&end>match.index){message('すでに組文字になっています。変更する場合は一度解除してください。',true);return;}
+  replaceTextRange(input,start,end,'[['+selected+']]',start+2,end+2);message('選んだ文字を組文字にしました。プレビューで確認してください。');
+}
+function uncombineText(input){
   if(busy)return;
-  const body=$('body'),start=body.selectionStart,end=body.selectionEnd;
-  for(const match of body.value.matchAll(/\[\[([^\n]*?)\]\]/g)){
+  const start=input.selectionStart,end=input.selectionEnd;
+  for(const match of input.value.matchAll(/\[\[([^\n]*?)\]\]/g)){
     const first=match.index,last=first+match[0].length;
-    if(start>=first&&end<=last){replaceBodyRange(first,last,match[1],first,first+match[1].length);message('手動の組文字を解除しました。数字2桁の自動処理は「組み方・フォント」で切り替えられます。');return;}
+    if(start>=first&&end<=last){replaceTextRange(input,first,last,match[1],first,first+match[1].length);message('手動の組文字を解除しました。数字2桁の自動処理は「組み方・フォント」で切り替えられます。');return;}
   }
   message('解除したい [[組文字]] の中にカーソルを置いてください。',true);
-});
+}
+function addCombineTools(input,label){
+  const bar=document.createElement('div');bar.className='combine-tools';
+  for(const [text,action] of [['組文字にする',combineText],['組文字を解除',uncombineText]]){
+    const button=document.createElement('button');button.type='button';button.textContent=text;button.setAttribute('aria-label',label+'：'+text);button.addEventListener('pointerdown',event=>event.preventDefault());button.addEventListener('click',()=>action(input));bar.append(button);
+  }
+  input.parentElement.append(bar);
+}
+for(const [id,label] of [['title','作品タイトル'],['author','作者名'],['preface','まえがき'],['pdf-title','PDFの目次用タイトル'],['pdf-author','PDFの目次用作者名']]){const input=$(id);input.maxLength=1000;addCombineTools(input,label);}
+$('combine-selection').addEventListener('click',()=>combineText($('body')));
+$('uncombine-selection').addEventListener('click',()=>uncombineText($('body')));
 $('previous').addEventListener('click',()=>{if(!proof)return;const range=previewRange(currentPage,proof.pages.length,proofStartSide,previewMode==='spread');if(range.start>0){currentPage=range.start-1;showPage();}});
 $('next').addEventListener('click',()=>{if(!proof)return;const range=previewRange(currentPage,proof.pages.length,proofStartSide,previewMode==='spread');if(range.end<proof.pages.length-1){currentPage=range.end+1;showPage();}});
 $('sample-button').addEventListener('click',async()=>{

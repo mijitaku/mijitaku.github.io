@@ -1,4 +1,4 @@
-import {SPEC,paginate,paginateAfterword,paginateReader,paginateToc,missingCharacters} from './layout.js?v=16';
+import {SPEC,paginate,paginateAfterword,paginateReader,paginateToc,missingCharacters} from './layout.js?v=19';
 
 export function imagePlacement(width,height,fit='contain'){
   if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)throw new Error('画像の大きさを読み取れませんでした。');
