@@ -1,4 +1,4 @@
-import {SPEC,glyphPosition} from './layout.js?v=14';
+import {SPEC,glyphPosition} from './layout.js?v=16';
 const crcTable=Uint32Array.from({length:256},(_,n)=>{for(let k=0;k<8;k++)n=n&1?0xedb88320^(n>>>1):n>>>1;return n>>>0;});
 function crc32(bytes){let crc=0xffffffff;for(const b of bytes)crc=crcTable[(crc^b)&255]^(crc>>>8);return (crc^0xffffffff)>>>0;}
 export function pageFilename(index){return `p-${String(index+1).padStart(2,'0')}.webp`;}
@@ -44,7 +44,7 @@ export async function renderWebp(page,font){
     for(const r of page.rules||[]){ctx.fillStyle=r.color;ctx.fillRect(r.x,r.y,r.width,r.height);}
     const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',.92));
     if(blob?.type==='image/webp')return new Uint8Array(await blob.arrayBuffer());
-    const {encodeWebp}=await import('./webp-fallback.js?v=14');
+    const {encodeWebp}=await import('./webp-fallback.js?v=16');
     return new Uint8Array(await encodeWebp(ctx.getImageData(0,0,width,height)));
   }finally{canvas.width=canvas.height=1;}
 }

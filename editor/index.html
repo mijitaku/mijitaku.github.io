@@ -5,9 +5,9 @@
   <title>身仕度 組版室</title>
   <meta name="description" content="本文・画像を並べて、身仕度のPDFを作成。">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%23192544'/%3E%3Cpath d='M10 7v18M16 7v18M22 7v12' stroke='white' stroke-width='2'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="style.css?v=15">
+  <link rel="stylesheet" href="style.css?v=16">
   <script src="assets/fontkit.js" defer></script><script src="assets/pdf-lib.js" defer></script>
-  <script type="module" src="app.js?v=15"></script>
+  <script type="module" src="app.js?v=16"></script>
 </head>
 <body>
   <header class="masthead"><div class="brand"><span class="brand-mark" aria-hidden="true">身</span><h1>身仕度 <span>組版室</span></h1></div><span class="version">編集の試作版 <b>0.3</b></span></header>
@@ -21,8 +21,9 @@
   <main>
     <section class="book-outline" aria-labelledby="book-heading">
       <div class="section-heading"><h2 id="book-heading">ページを並べる</h2><span class="step">01</span></div>
-      <div class="add-controls"><button id="add-toc" type="button">＋ 目次</button><button id="add-text" type="button">＋ 本文</button><button id="add-reader" type="button">＋ 読者寄稿</button><button id="add-afterword" type="button">＋ あとがき</button><button id="add-image" type="button">＋ 画像</button></div>
+      <div class="add-controls"><button id="add-toc" type="button">＋ 目次</button><button id="add-text" type="button">＋ 本文</button><button id="add-reader" type="button">＋ 読者寄稿</button><button id="add-afterword" type="button">＋ あとがき</button><button id="add-image" type="button">＋ 画像</button><button id="add-pdf" type="button">＋ PDF</button></div>
       <input id="image-files" type="file" accept="image/*" multiple hidden>
+      <input id="pdf-files" type="file" accept="application/pdf,.pdf" hidden>
       <ol id="book-list" class="book-list" aria-label="PDFに入れる順番"></ol>
       <p class="book-help">作品名を押して編集。上下ボタンでPDFに入れる順番を変えられます。</p>
     </section>
@@ -63,7 +64,15 @@
         <p id="image-description" class="image-description"></p>
         <div class="form-actions"><button id="image-preview" class="primary" type="button">並び順で確認</button><button id="replace-image" class="quiet" type="button">画像を選び直す</button></div>
       </div>
-      <p class="privacy">原稿・画像はこの端末内で処理し、下書きとして保存します。公開サイトには送信しません。</p>
+      <div id="pdf-editor" hidden>
+        <div class="field"><label for="pdf-title">作品タイトル（一覧・目次用）</label><input id="pdf-title" type="text" maxlength="100"></div>
+        <div class="field"><label for="pdf-author">作者名（目次用）</label><input id="pdf-author" type="text" maxlength="100"></div>
+        <p id="pdf-description"></p>
+        <p>PDF内の文章・配置は変更せず、全ページを元の順番で入れます。サイズが違う場合は、切り取らず誌面に収めます。上下ボタンで作品ごと移動できます。タイトル・作者名を変えてもPDF内の文字は変わりません。</p>
+        <p>1作品25MB・100ページまで。注釈・フォームがあるページは見た目を保つため画像として出力します。本文の修正は元のアプリで行い、PDFを選び直してください。</p>
+        <div class="form-actions"><button id="pdf-preview" class="primary" type="button">並び順で確認</button><button id="replace-pdf" type="button">PDFを選び直す</button></div>
+      </div>
+      <p class="privacy">原稿・画像・PDFはこの端末内で処理し、下書きとして保存します。公開サイトには送信しません。</p>
       <p id="status" class="status" role="status" aria-live="polite">フォントを準備しています…</p>
     </section>
     <section class="proof" aria-labelledby="preview-heading">

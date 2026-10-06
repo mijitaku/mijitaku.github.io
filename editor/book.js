@@ -1,4 +1,4 @@
-import {SPEC,paginate,paginateAfterword,paginateReader,paginateToc,missingCharacters} from './layout.js?v=14';
+import {SPEC,paginate,paginateAfterword,paginateReader,paginateToc,missingCharacters} from './layout.js?v=16';
 
 export function imagePlacement(width,height,fit='contain'){
   if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)throw new Error('画像の大きさを読み取れませんでした。');
@@ -16,6 +16,9 @@ export function buildBook(items,{font,startSide='odd',title='身仕度_まとめ
       let doc;try{doc=(item.kind==='toc'?paginateToc:item.layout==='reader'?paginateReader:item.layout==='afterword'?paginateAfterword:paginate)({...item,startSide:(start+(startSide==='even'?1:0))%2?'even':'odd'});}catch(error){throw new Error(`${number+1}番目「${itemTitle}」：${error.message}`);}
       if(font){const missing=missingCharacters(doc,font);if(missing.length)throw new Error(`「${itemTitle}」のフォントにない文字：${missing.slice(0,12).join(' ')}。文字かフォントを変更してください。`);}
       for(const p of doc.pages)pages.push({...p,index:pages.length,itemId:item.id,itemTitle,itemPage:p.index+1});
+    }else if(item.kind==='pdf'){
+      if(!item.pdf?.pages?.length||!item.pdf.data)throw new Error(`「${itemTitle}」のPDFを選び直してください。`);
+      item.pdf.pages.forEach((image,pdfIndex)=>pages.push({kind:'image',image,placement:imagePlacement(image.width,image.height),pdfSource:item.pdf,pdfIndex,cells:[],index:pages.length,itemId:item.id,itemTitle,itemPage:pdfIndex+1}));
     }else if(item.kind==='image'){
       if(!item.image?.data?.startsWith('data:image/jpeg;base64,'))throw new Error(`「${itemTitle}」の画像を選び直してください。`);
       const placement=imagePlacement(item.image.width,item.image.height,item.fit);

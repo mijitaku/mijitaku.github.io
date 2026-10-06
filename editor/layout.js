@@ -1,4 +1,4 @@
-import {readerLogo} from './reader-logo.js?v=14';
+import {readerLogo} from './reader-logo.js?v=16';
 export const SPEC = Object.freeze({width:768.24,height:1086.236,rows:36,columns:15,bodySize:22,titleSize:26,pitch:22.44,linePitch:38,top:127.556,oddRight:643.151,evenRight:671.497});
 const NO_START = new Set(Array.from('、。，．・：；？！‼⁇⁈⁉）)]｝}〕〉》」』】〙〗〟’”｠»ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶー〜～…‥'));
 const NO_END = new Set(Array.from('（([｛{〔〈《「『【〘〖〝‘“｟«'));
@@ -197,9 +197,18 @@ export async function createPdf(doc,fontBytes,font,fontkit,PDFLib,onProgress=()=
   const verticalFont=hasText?await pdf.embedFont(fontBytes,{subset:false,features:['vert','vrt2']}):null;
   const horizontalFont=hasText?await pdf.embedFont(fontBytes,{subset:false,features:HORIZONTAL_FEATURES}):null;
   pdf.setTitle(doc.title||'身仕度');pdf.setAuthor(doc.author||'');pdf.setCreator('身仕度 組版室 v0.3');pdf.setSubject('月刊身仕度');
+  const sources=new Map();
   for(const page of doc.pages){
     const out=pdf.addPage([SPEC.width,SPEC.height]);
-    if(page.kind==='image'){
+    if(page.pdfSource&&!page.image.raster){
+      if(!sources.has(page.pdfSource))sources.set(page.pdfSource,await PDFDocument.load(page.pdfSource.data));
+      const original=sources.get(page.pdfSource).getPage(page.pdfIndex),box=original.getCropBox();
+      const embedded=await pdf.embedPage(original,{left:box.x,bottom:box.y,right:box.x+box.width,top:box.y+box.height});
+      const rotation=((original.getRotation().angle%360)+360)%360,turned=rotation===90||rotation===270;
+      const w=turned?box.height:box.width,h=turned?box.width:box.height,s=Math.min(SPEC.width/w,SPEC.height/h);
+      const x=(SPEC.width-w*s)/2,y=(SPEC.height-h*s)/2;
+      out.drawPage(embedded,{x:x+(rotation===180||rotation===270?w*s:0),y:y+(rotation===90||rotation===180?h*s:0),width:box.width*s,height:box.height*s,rotate:degrees(-rotation)});
+    }else if(page.kind==='image'){
       const img=await pdf.embedJpg(page.image.data),r=page.placement;
       out.drawImage(img,{x:r.x,y:SPEC.height-r.y-r.height,width:r.width,height:r.height});
     }

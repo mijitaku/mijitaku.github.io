@@ -31,6 +31,17 @@ export function validateProject(input){
       if(!Array.isArray(i.entries)||i.entries.length>10)fail();
       return {id,kind:'toc',title,entries:i.entries.map(e=>({title:str(e.title,200),author:str(e.author,100),reader:e.reader===true}))};
     }
+    if(i.kind==='pdf'){
+      const source=i.pdf;if(!source||!Array.isArray(source.pages)||!source.pages.length||source.pages.length>100)fail();
+      const data=str(source.data,35000000);if(!/^JVBER[A-Za-z0-9+/]*={0,2}$/.test(data))fail();
+      let total=0;
+      const pages=source.pages.map(im=>{
+        if(!im||!Number.isInteger(im.width)||!Number.isInteger(im.height)||im.width<1||im.height<1||im.width>2400||im.height>2400)fail();
+        const image=str(im.data,40000000);total+=image.length;if(total>100*1024*1024||!/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(image))fail();
+        return {data:image,width:im.width,height:im.height,name:str(im.name,600),raster:im.raster===true};
+      });
+      return {id,kind:'pdf',title,author:str(i.author||'',100),pdf:{name:str(source.name,500),data,pages}};
+    }
     if(i.kind==='image'){
       const im=i.image;if(!im||!Number.isInteger(im.width)||!Number.isInteger(im.height)||im.width<1||im.height<1||im.width>2400||im.height>2400)fail();
       const data=str(im.data,40000000);if(!/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(data))fail();
