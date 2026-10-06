@@ -6,6 +6,7 @@ import {readPdfFile} from './pdf-import.js?v=16';
 const $=id=>document.getElementById(id);
 let font,fontBytes,proof,currentPage=0,busy=false,objectUrl,revision=0,pdfFile,sharing=false,pdfOutput=null;
 let webFile=null,webUrl=null;
+let clearedProject=null;
 let previewMode='single',proofStartSide='odd';
 let draftReady=false,draftDirty=false,draftTimer=null,draftChain=Promise.resolve(),draftVersion=0,customFont=null,currentFontName='ZENオールド明朝',backupFile=null,backupUrl=null;
 let serial=1;
@@ -41,7 +42,7 @@ function renderEditor(){
 }
 function selectItem(id){saveCurrent();selectedId=id;scheduleDraft();renderEditor();renderList();if(proof){const index=proof.pages.findIndex(p=>p.itemId===id);if(index>=0){currentPage=index;showPage();}}}
 function message(text,error=false){$('status').textContent=text;$('status').classList.toggle('error',error);}
-function setBusy(value){busy=value;$('preview-button').disabled=value||!font;$('sample-button').disabled=value;$('export').disabled=value||!proof;$('export-web').disabled=value||!proof;$('font-file').disabled=value;for(const id of ['import-project','backup-project','save-draft','add-toc','toc-import','toc-add','toc-preview','add-text','add-reader','add-image','add-afterword','replace-image','image-preview','add-pdf','replace-pdf','pdf-preview','pdf-title','pdf-author'])$(id).disabled=value;renderList();if(selectedItem()?.kind==='toc')renderToc();}
+function setBusy(value){busy=value;$('preview-button').disabled=value||!font;$('sample-button').disabled=value;$('export').disabled=value||!proof;$('export-web').disabled=value||!proof;$('font-file').disabled=value;for(const id of ['import-project','backup-project','save-draft','clear-project','undo-clear','add-toc','toc-import','toc-add','toc-preview','add-text','add-reader','add-image','add-afterword','replace-image','image-preview','add-pdf','replace-pdf','pdf-preview','pdf-title','pdf-author'])$(id).disabled=value;renderList();if(selectedItem()?.kind==='toc')renderToc();}
 function inputs(){return {preface:$('preface').value,title:$('title').value,author:$('author').value,body:$('body').value,indent:$('indent').checked,startSide:$('start-side').value,combineDigits:$('combine-digits').checked};}
 function updatePrefaceCount(){$('preface-count').textContent=prefaceLength($('preface').value)+' / 150文字';}
 function invalidate(){saveCurrent();scheduleDraft();updatePrefaceCount();revision++;proof=null;pdfFile=null;$('export').disabled=true;$('export-web').disabled=true;$('download-area').hidden=true;$('web-download-area').hidden=true;webFile=null;$('proof-note').textContent='内容を変更しました。「並び順で確認」で更新してください。';$('page-info').textContent='変更は未反映';$('char-count').textContent=graphemes($('body').value.replace(/\[\[([^\n]*?)\]\]/g,'$1').replace(/\s/g,'')).length.toLocaleString('ja')+'字';renderList();}
@@ -322,6 +323,56 @@ async function restoreProject(data){
   }finally{draftReady=wasReady;}
 }
 $('save-draft').addEventListener('click',()=>{scheduleDraft();flushDraft();});
+function clearGeneratedFiles(){
+  for(const url of [objectUrl,webUrl,backupUrl])if(url)URL.revokeObjectURL(url);
+  objectUrl=webUrl=backupUrl=null;pdfFile=pdfOutput=webFile=backupFile=null;
+  for(const id of ['download-area','web-download-area','backup-area'])$(id).hidden=true;
+  for(const id of ['download-link','save-link','save-web','download-backup']){$(id).removeAttribute('href');$(id).removeAttribute('download');}
+  for(const id of ['pdf-file-info','web-file-info','backup-info'])$(id).textContent='';
+}
+function resetProofDisplay(){
+  currentPage=0;previewMode='single';proofStartSide=$('start-side').value;
+  $('preview-mode').value='single';document.querySelector('main').classList.remove('spread-preview');$('spread-help').hidden=true;
+  $('paper-area').classList.remove('is-spread');$('paper-area').replaceChildren();
+  $('page-info').textContent='まだ組版していません';$('next').disabled=$('previous').disabled=true;
+  for(const [id,label] of [['next','次のページ'],['previous','前のページ']]){$(id).setAttribute('aria-label',label);$(id).title=label;}
+  clearGeneratedFiles();
+}
+async function clearProject(){
+  if(busy||sharing)return;
+  if(!window.confirm('制作データをクリアして、新しい号を作りますか？\n\n原稿・画像・PDF・目次・並び順・ファイル名と、この端末の下書きを空にします。フォントは引き継ぎます。\n\n必要な内容は、先に「編集データを書き出す」でダウンロード保存してください。保存済みのPDF・ZIP・編集データのファイルは消えません。\n\nこのページを閉じる・再読み込みするまでは、直前のクリアを元に戻せます。'))return;
+  const previous=structuredClone(projectSnapshot()),wasReady=draftReady;
+  const blank={id:'item-1',kind:'text',title:'',author:'',body:'',indent:true,combineDigits:true};
+  const fresh=makeProject({items:[blank],selectedId:blank.id,startSide:'odd',pdfName:'',font:customFont});
+  clearTimeout(draftTimer);draftVersion++;draftReady=false;setBusy(true);document.querySelector('main').inert=true;
+  try{
+    // Wait for every earlier autosave before committing the empty draft.
+    await draftChain.catch(()=>{});await saveDraft(fresh);
+    clearedProject=previous;items=fresh.items;selectedId=blank.id;serial=2;
+    $('start-side').value='odd';$('pdf-name').value='';renderEditor();invalidate();resetProofDisplay();
+    for(const id of ['image-files','pdf-files','project-file','font-file'])$(id).value='';
+    for(const id of ['image-title','pdf-title','pdf-author'])$(id).value='';
+    for(const id of ['image-description','pdf-description'])$(id).textContent='';$('toc-entries').replaceChildren();
+    draftDirty=false;draftReady=true;$('undo-clear').hidden=$('undo-clear-help').hidden=false;
+    $('draft-status').textContent='制作データをクリアしました。新しい号を作れます。';
+    $('proof-note').textContent='原稿・画像・PDFを追加して「並び順で確認」を押してください。';
+    message('制作データをクリアしました。フォントは引き継いでいます。');
+  }catch(error){draftReady=wasReady;$('draft-status').textContent='クリアできませんでした。制作データは残しています。';message('下書きを更新できなかったため、クリアしませんでした。編集データを保存してからお試しください。',true);}
+  finally{document.querySelector('main').inert=false;setBusy(false);}
+}
+async function undoClear(){
+  if(busy||sharing||!clearedProject)return;
+  if(!window.confirm('現在の編集内容を、直前のクリア前の内容に戻しますか？\nクリア後に入力した内容は置き換わります。'))return;
+  setBusy(true);document.querySelector('main').inert=true;
+  try{
+    await flushDraft();await restoreProject(clearedProject);resetProofDisplay();draftReady=true;scheduleDraft();await flushDraft();
+    if(!draftDirty){clearedProject=null;$('undo-clear').hidden=$('undo-clear-help').hidden=true;message('クリア前の制作データを戻しました。「並び順で確認」で誌面を表示できます。');}
+    else message('制作データは画面に戻しましたが、下書きを保存できません。編集データを書き出して保存してください。',true);
+  }catch(error){message('元に戻せませんでした。'+error.message,true);}
+  finally{document.querySelector('main').inert=false;setBusy(false);}
+}
+$('clear-project').addEventListener('click',clearProject);
+$('undo-clear').addEventListener('click',undoClear);
 $('backup-project').addEventListener('click',()=>{
   if(busy)return;
   try{
