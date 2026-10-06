@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='5' fill='%23192544'/%3E%3Cpath d='M10 7v18M16 7v18M22 7v12' stroke='white' stroke-width='2'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="style.css?v=17">
   <script src="assets/fontkit.js" defer></script><script src="assets/pdf-lib.js" defer></script>
-  <script type="module" src="app.js?v=17"></script>
+  <script type="module" src="app.js?v=18"></script>
 </head>
 <body>
   <header class="masthead"><div class="brand"><span class="brand-mark" aria-hidden="true">身</span><h1>身仕度 <span>組版室</span></h1></div><span class="version">編集の試作版 <b>0.3</b></span></header>
@@ -55,7 +55,7 @@
       <div id="toc-editor" hidden>
         <p>タイトルは上揃え、作者名は下揃え。読者寄稿にチェックすると、作者名の上に小さく表示します。あとがきは作者名を空欄にできます。</p>
         <div class="form-actions"><button id="toc-import" type="button">並べた作品から取り込む</button><button id="toc-add" type="button">項目を追加</button></div>
-        <p>取り込み後も編集できます。作品名や順番を変えた場合は、もう一度取り込んでください。あとがきを含め10項目まで。</p>
+        <p>本文と作品PDFを取り込みます。画像・作品外PDFは取り込みません。取り込み後も編集できます。作品名・順番・PDFの種類を変えた場合は、もう一度取り込んでください。あとがきを含め10項目まで。</p>
         <div id="toc-entries"></div>
         <button id="toc-preview" class="primary" type="button">並び順で確認</button>
       </div>
@@ -66,6 +66,8 @@
         <div class="form-actions"><button id="image-preview" class="primary" type="button">並び順で確認</button><button id="replace-image" class="quiet" type="button">画像を選び直す</button></div>
       </div>
       <div id="pdf-editor" hidden>
+        <div class="field"><label for="pdf-kind">PDFの種類</label><select id="pdf-kind"><option value="work">作品PDF（目次に取り込む）</option><option value="extra">作品外PDF（目次に取り込まない）</option></select><p>短歌などの作品は「作品PDF」。表紙・扉絵・テプラ短歌・ひとこと・奥付などは「作品外PDF」を選んでください。どちらも全ページを誌面に入れます。</p></div>
+        <p id="pdf-toc-help"></p>
         <div class="field"><label for="pdf-title">作品タイトル（一覧・目次用）</label><input id="pdf-title" type="text" maxlength="100"></div>
         <div class="field"><label for="pdf-author">作者名（目次用）</label><input id="pdf-author" type="text" maxlength="100"></div>
         <p id="pdf-description"></p>

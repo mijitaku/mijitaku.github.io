@@ -1,4 +1,4 @@
-import {saveDraft,readDraft,makeProject,validateProject,bytesToBase64,base64ToBytes} from './storage.js?v=16';
+import {saveDraft,readDraft,makeProject,validateProject,bytesToBase64,base64ToBytes} from './storage.js?v=18';
 import {createWebZip} from './web-export.js?v=16';
 import {paginate,pageSvg,missingCharacters,createPdf,graphemes,prefaceLength} from './layout.js?v=16';
 import {buildBook,moveItem,imageSvg,readImageFile} from './book.js?v=16';
@@ -20,7 +20,7 @@ function renderList(){
     const li=document.createElement('li');li.className='book-row'+(item.id===selectedId?' selected':'');
     const select=document.createElement('button');select.type='button';select.className='item-select';select.dataset.action='select';select.dataset.id=item.id;select.setAttribute('aria-current',item.id===selectedId?'true':'false');
     const name=document.createElement('span');name.className='item-name';name.textContent=`${String(index+1).padStart(2,'0')}　${item.title|| (item.kind==='text'?'タイトル未入力':'画像ページ')}`;
-    const detail=document.createElement('span');detail.className='item-detail';const section=proof?.sections.find(s=>s.id===item.id);detail.textContent=(item.kind==='pdf'?`PDF・${item.pdf.pages.length}ページ`+(item.author?'・'+item.author:''):item.kind==='toc'?'目次':item.kind==='text'?(item.layout==='reader'?'読者寄稿':item.layout==='afterword'?'あとがき':'本文')+(item.author?'・'+item.author:''):'画像')+(section?`・${section.start}〜${section.start+section.count-1}ページ`:'');select.append(name,detail);li.append(select);
+    const detail=document.createElement('span');detail.className='item-detail';const section=proof?.sections.find(s=>s.id===item.id);detail.textContent=(item.kind==='pdf'?`${item.tocInclude===false?'作品外PDF（目次なし）':'作品PDF'}・${item.pdf.pages.length}ページ`+(item.author?'・'+item.author:''):item.kind==='toc'?'目次':item.kind==='text'?(item.layout==='reader'?'読者寄稿':item.layout==='afterword'?'あとがき':'本文')+(item.author?'・'+item.author:''):'画像')+(section?`・${section.start}〜${section.start+section.count-1}ページ`:'');select.append(name,detail);li.append(select);
     const controls=document.createElement('div');controls.className='item-controls';
     for(const [action,label,glyph,disabled] of [['up','前へ移動','↑',index===0],['down','後ろへ移動','↓',index===items.length-1],['remove','削除','削除',false]]){
       const button=document.createElement('button');button.type='button';button.dataset.action=action;button.dataset.id=item.id;button.setAttribute('aria-label',`${item.title||'ページ'}を${label}`);button.textContent=glyph;button.disabled=busy||disabled;controls.append(button);
@@ -32,7 +32,7 @@ function renderList(){
 function renderEditor(){
   const item=selectedItem();const image=item?.kind==='image',toc=item?.kind==='toc',pdf=item?.kind==='pdf';$('manuscript-form').hidden=image||toc||pdf;$('image-editor').hidden=!image;$('toc-editor').hidden=!toc;$('pdf-editor').hidden=!pdf;if(toc)renderToc();
   $('input-heading').textContent=toc?'目次を作る':image?'画像を入れる':item?.layout==='reader'?'読者寄稿を入れる':item?.layout==='afterword'?'あとがきを入れる':'原稿を入れる';
-  if(pdf){$('input-heading').textContent='PDF作品を入れる';$('pdf-title').value=item.title;$('pdf-author').value=item.author||'';$('pdf-description').textContent=`${item.pdf.name}・全${item.pdf.pages.length}ページ`;}
+  if(pdf){const extra=item.tocInclude===false;$('input-heading').textContent=extra?'作品外PDFを入れる':'PDF作品を入れる';$('pdf-kind').value=extra?'extra':'work';$('pdf-title').value=item.title;$('pdf-author').value=item.author||'';$('pdf-description').textContent=`${item.pdf.name}・全${item.pdf.pages.length}ページ`;$('pdf-toc-help').textContent=(extra?'このPDFは目次の自動取り込みから除外します。':'このPDFは1作品として、タイトルと作者名を目次に取り込みます。')+' すでに作った目次へ反映するには、目次の「並べた作品から取り込む」を押してください。';document.querySelector('label[for="pdf-title"]').textContent=extra?'一覧に表示する名前':'作品タイトル（一覧・目次用）';$('pdf-author').closest('.field').hidden=extra;}
   $('afterword-help').hidden=item?.layout!=='afterword';
   $('reader-fields').hidden=item?.layout!=='reader';$('preface').value=item?.preface||'';updatePrefaceCount();
   $('title').maxLength=item?.layout==='reader'?27:item?.layout==='afterword'?18:54;
@@ -42,7 +42,7 @@ function renderEditor(){
 }
 function selectItem(id){saveCurrent();selectedId=id;scheduleDraft();renderEditor();renderList();if(proof){const index=proof.pages.findIndex(p=>p.itemId===id);if(index>=0){currentPage=index;showPage();}}}
 function message(text,error=false){$('status').textContent=text;$('status').classList.toggle('error',error);}
-function setBusy(value){busy=value;$('preview-button').disabled=value||!font;$('sample-button').disabled=value;$('export').disabled=value||!proof;$('export-web').disabled=value||!proof;$('font-file').disabled=value;for(const id of ['import-project','backup-project','save-draft','clear-project','undo-clear','add-toc','toc-import','toc-add','toc-preview','add-text','add-reader','add-image','add-afterword','replace-image','image-preview','add-pdf','replace-pdf','pdf-preview','pdf-title','pdf-author'])$(id).disabled=value;renderList();if(selectedItem()?.kind==='toc')renderToc();}
+function setBusy(value){busy=value;$('preview-button').disabled=value||!font;$('sample-button').disabled=value;$('export').disabled=value||!proof;$('export-web').disabled=value||!proof;$('font-file').disabled=value;for(const id of ['import-project','backup-project','save-draft','clear-project','undo-clear','add-toc','toc-import','toc-add','toc-preview','add-text','add-reader','add-image','add-afterword','replace-image','image-preview','add-pdf','replace-pdf','pdf-preview','pdf-title','pdf-author','pdf-kind'])$(id).disabled=value;renderList();if(selectedItem()?.kind==='toc')renderToc();}
 function inputs(){return {preface:$('preface').value,title:$('title').value,author:$('author').value,body:$('body').value,indent:$('indent').checked,startSide:$('start-side').value,combineDigits:$('combine-digits').checked};}
 function updatePrefaceCount(){$('preface-count').textContent=prefaceLength($('preface').value)+' / 150文字';}
 function invalidate(){saveCurrent();scheduleDraft();updatePrefaceCount();revision++;proof=null;pdfFile=null;$('export').disabled=true;$('export-web').disabled=true;$('download-area').hidden=true;$('web-download-area').hidden=true;webFile=null;$('proof-note').textContent='内容を変更しました。「並び順で確認」で更新してください。';$('page-info').textContent='変更は未反映';$('char-count').textContent=graphemes($('body').value.replace(/\[\[([^\n]*?)\]\]/g,'$1').replace(/\s/g,'')).length.toLocaleString('ja')+'字';renderList();}
@@ -93,7 +93,7 @@ $('add-text').addEventListener('click',()=>{
   renderEditor();invalidate();$('title').focus();message('本文を追加しました。タイトル・作者・本文を入力してください。');
 });
 const blankTocEntry=()=>({title:'',author:'',reader:false});
-function tocFromItems(){return items.filter(i=>['text','pdf'].includes(i.kind)&&i.title?.trim()).map(i=>({title:i.title,author:i.layout==='afterword'?'':i.author||'',reader:i.layout==='reader'}));}
+function tocFromItems(){return items.filter(i=>(i.kind==='text'||(i.kind==='pdf'&&i.tocInclude!==false))&&i.title?.trim()).map(i=>({title:i.title,author:i.layout==='afterword'?'':i.author||'',reader:i.layout==='reader'}));}
 function renderToc(){
   const item=selectedItem();if(item?.kind!=='toc')return;const host=$('toc-entries');host.replaceChildren();
   item.entries.forEach((entry,index)=>{
@@ -159,6 +159,7 @@ function choosePdf(id=null){if(busy)return;pdfReplaceId=id;$('pdf-files').value=
 $('add-pdf').addEventListener('click',()=>choosePdf());
 $('replace-pdf').addEventListener('click',()=>{if(selectedItem()?.kind==='pdf')choosePdf(selectedId);});
 $('pdf-preview').addEventListener('click',()=>{if(!busy)typeset(true);});
+$('pdf-kind').addEventListener('change',()=>{const item=selectedItem();if(busy||item?.kind!=='pdf')return;if($('pdf-kind').value==='extra')item.tocInclude=false;else delete item.tocInclude;renderEditor();invalidate();message('PDFの種類を変更しました。作成済みの目次には「並べた作品から取り込む」で反映してください。');});
 for(const id of ['pdf-title','pdf-author'])$(id).addEventListener('input',()=>{const item=selectedItem();if(busy||item?.kind!=='pdf')return;item.title=$('pdf-title').value;item.author=$('pdf-author').value;invalidate();});
 $('pdf-files').addEventListener('change',async event=>{
   const file=event.target.files[0];if(!file||busy)return;saveCurrent();setBusy(true);

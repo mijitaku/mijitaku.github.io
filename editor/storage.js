@@ -40,7 +40,7 @@ export function validateProject(input){
         const image=str(im.data,40000000);total+=image.length;if(total>100*1024*1024||!/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(image))fail();
         return {data:image,width:im.width,height:im.height,name:str(im.name,600),raster:im.raster===true};
       });
-      return {id,kind:'pdf',title,author:str(i.author||'',100),pdf:{name:str(source.name,500),data,pages}};
+      return {id,kind:'pdf',title,author:str(i.author||'',100),...(i.tocInclude===false?{tocInclude:false}:{}),pdf:{name:str(source.name,500),data,pages}};
     }
     if(i.kind==='image'){
       const im=i.image;if(!im||!Number.isInteger(im.width)||!Number.isInteger(im.height)||im.width<1||im.height<1||im.width>2400||im.height>2400)fail();
