@@ -135,18 +135,17 @@ function animateCurl(to,done){const from=gesture.progress,start=performance.now(
 function finishTurn(commit){if(!gesture?.direction){turning=false;return}if(touchCurlFrame){cancelAnimationFrame(touchCurlFrame);touchCurlFrame=0;styleCurl(gesture.progress,gesture.direction)}const g={...gesture};animateCurl(commit?1:0,()=>{if(commit){const from=page;page=g.target;render();track(g.direction,{from,to:page,gesture:true});requestAnimationFrame(()=>{softTurn.classList.remove('active');softTurn.style.opacity='';turnUnder.classList.remove('active');turning=false;gesture=null})}else{softTurn.classList.remove('active');softTurn.style.opacity='';turnUnder.classList.remove('active');render();turning=false;gesture=null}})}
 async function desktopAnimatedGo(target,direction,reason){
   target=normalizePage(target);if(target===page||turning)return;
-  // A cover is a single centered page, never a half of an animated spread.
-  if(!spreadMode(page)||!spreadMode(target)){directGo(target,reason);return}
   const currentPages=[...spread.querySelectorAll('.page')];
   const currentLeft=spread.querySelector('.page-wrap.left .page'),currentRight=spread.querySelector('.page-wrap.right .page');
   const isSpread=!!(currentLeft&&currentRight);
 
-  if(!isSpread){
-    // Cover/end page: keep the existing continuous SVG turn.
+  if(!isSpread||!spreadMode(target)){
+    // Curl one real sheet at cover boundaries, then settle into the centered layout.
+    const visible=isSpread?(direction==='next'?currentLeft:currentRight):currentPages[0];
     gesture={direction:null,target:null,progress:0,startX:0,startY:0,startT:performance.now(),lastX:0,lastT:performance.now(),velocity:0,dx:0,maxAbsDx:0};
-    if(!fitSoftTurn(currentPages[0])||turning){gesture=null;return}
+    if(!fitSoftTurn(visible)||turning){gesture=null;return}
     turning=true;gesture.direction=direction;gesture.target=target;
-    if(direction==='next'){turnUnderImage.src=pageURL(target);turnUnder.classList.add('active');setHref(softFrontImage,pageURL(page));setHref(paperGhost,pageURL(page))}
+    if(direction==='next'){turnUnderImage.src=pageURL(target);turnUnder.classList.add('active');setHref(softFrontImage,visible.src);setHref(paperGhost,visible.src)}
     else{setHref(softFrontImage,pageURL(target));setHref(paperGhost,pageURL(target))}
     softTurn.classList.add('active');styleCurl(0,direction);
     const from=page;animateCurl(1,()=>{page=target;render();track(reason,{from,to:page,desktop:true});requestAnimationFrame(()=>{softTurn.classList.remove('active');softTurn.style.opacity='';turnUnder.classList.remove('active');turning=false;gesture=null})});
