@@ -108,11 +108,6 @@ window.MIJITAKU_SITE_DATA = {
       "x": "https://x.com/yattopot?s=11&t=mtYJcxfOAP7XxACw2ptSOg"
     },
     {
-      "name": "あかさび",
-      "key": "akasabi",
-      "x": "https://x.com/akasabife2o3?s=11&t=mtYJcxfOAP7XxACw2ptSOg"
-    },
-    {
       "name": "ぱんつー",
       "key": "pantsuu",
       "x": null
