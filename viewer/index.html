@@ -133,11 +133,60 @@ function updateFingerTurn(p){if(!gesture?.direction)return;gesture.progress=clam
 function easeSoft(t){return .5-.5*Math.cos(Math.PI*clamp(t))}
 function animateCurl(to,done){const from=gesture.progress,start=performance.now(),duration=Math.max(180,turnMs*Math.abs(to-from));cancelAnimationFrame(animFrame);function frame(now){const t=clamp((now-start)/duration),e=easeSoft(t);gesture.progress=mix(from,to,e);styleCurl(gesture.progress,gesture.direction);if(t<1)animFrame=requestAnimationFrame(frame);else done()}animFrame=requestAnimationFrame(frame)}
 function finishTurn(commit){if(!gesture?.direction){turning=false;return}if(touchCurlFrame){cancelAnimationFrame(touchCurlFrame);touchCurlFrame=0;styleCurl(gesture.progress,gesture.direction)}const g={...gesture};animateCurl(commit?1:0,()=>{if(commit){const from=page;page=g.target;render();track(g.direction,{from,to:page,gesture:true});requestAnimationFrame(()=>{softTurn.classList.remove('active');softTurn.style.opacity='';turnUnder.classList.remove('active');turning=false;gesture=null})}else{softTurn.classList.remove('active');softTurn.style.opacity='';turnUnder.classList.remove('active');render();turning=false;gesture=null}})}
+// The spine moves by half a page when a centered closed book opens or closes.
+async function animateCoverBoundary(target,direction,reason){
+  const from=page,front=from===1||target===1,opening=from===1||from===issue.pages;
+  const inside=opening?target:from;
+  const left=warmPage(front?1:inside+1,'high');
+  const right=warmPage(front?inside:issue.pages,'high');
+  const under=warmPage(front?inside+1:inside,'high');
+  const visible=spread.querySelector('.page');
+  if(!visible||!left||!right||!under){directGo(target,reason);return}
+  turning=true;
+  await Promise.all([left,right,under].map(im=>im.decode?im.decode().catch(()=>{}):Promise.resolve()));
+  if([left,right,under].some(im=>!im.naturalWidth)){turning=false;directGo(target,reason);return}
+  const bounds=book.getBoundingClientRect(),r=visible.getBoundingClientRect();
+  const W=r.width,H=r.height,cx=bounds.width/2,cy=r.top-bounds.top+H/2;
+  const scene=document.createElement('canvas');scene.className='desktop-turn-scene';
+  Object.assign(scene.style,{left:'0',top:'0',width:`${bounds.width}px`,height:`${bounds.height}px`});
+  const dpr=Math.min(2,window.devicePixelRatio||1);scene.width=Math.ceil(bounds.width*dpr);scene.height=Math.ceil(bounds.height*dpr);
+  const ctx=scene.getContext('2d');ctx.scale(dpr,dpr);book.appendChild(scene);spread.style.visibility='hidden';
+  const startP=direction==='next'?0:1,endP=1-startP;
+  const closedOffset=front?W/2:-W/2;
+  const startX=cx+(opening?closedOffset:0),endX=cx+(opening?0:closedOffset);
+  function draw(progress){
+    const p=mix(startP,endP,progress),hinge=mix(startX,endX,progress),top=cy-H/2;
+    const projection=Math.abs(Math.cos(Math.PI*p)),side=p<.5?-1:1,face=side<0?left:right;
+    ctx.clearRect(0,0,bounds.width,bounds.height);
+    // Only real pages are drawn: no white placeholder outside the closed cover.
+    ctx.drawImage(under,front?hinge-W:hinge,top,W,H);
+    if(projection<.004)return;
+    const slices=Math.max(120,Math.ceil(W/2.2)),bend=.15*Math.sin(Math.PI*p);
+    const curve=u=>u+bend*Math.sin(Math.PI*u)*u*(1-u);
+    ctx.save();
+    ctx.beginPath();ctx.rect(side<0?hinge-W*projection:hinge,top,W*projection,H);ctx.clip();
+    for(let i=0;i<slices;i++){
+      const u0=i/slices,u1=(i+1)/slices,x0=hinge+side*W*projection*curve(u0),x1=hinge+side*W*projection*curve(u1);
+      ctx.drawImage(face,face.naturalWidth*(side<0?1-u1:u0),0,face.naturalWidth*(u1-u0),face.naturalHeight,Math.min(x0,x1)-.5,top,Math.abs(x1-x0)+1,H);
+    }
+    const outer=hinge+side*W*projection,gradient=ctx.createLinearGradient(outer,0,hinge,0);
+    gradient.addColorStop(0,'rgba(255,255,255,0)');gradient.addColorStop(1,`rgba(35,29,24,${.2*Math.sin(Math.PI*p)})`);
+    ctx.fillStyle=gradient;ctx.fillRect(Math.min(outer,hinge),top,W*projection,H);ctx.restore();
+  }
+  const start=performance.now();draw(0);
+  function frame(now){
+    const t=clamp((now-start)/Math.max(360,turnMs));draw(easeSoft(t));
+    if(t<1){animFrame=requestAnimationFrame(frame);return}
+    page=target;render();fitPages();spread.style.visibility='';scene.remove();turning=false;track(reason,{from,to:page,desktop:true});requestAnimationFrame(positionArrows);
+  }
+  animFrame=requestAnimationFrame(frame);
+}
 async function desktopAnimatedGo(target,direction,reason){
   target=normalizePage(target);if(target===page||turning)return;
   const currentPages=[...spread.querySelectorAll('.page')];
   const currentLeft=spread.querySelector('.page-wrap.left .page'),currentRight=spread.querySelector('.page-wrap.right .page');
   const isSpread=!!(currentLeft&&currentRight);
+  if((page===1||page===issue.pages||target===1||target===issue.pages)&&(isSpread||spreadMode(target))){await animateCoverBoundary(target,direction,reason);return}
 
   if(!isSpread||!spreadMode(target)){
     // Curl one real sheet at cover boundaries, then settle into the centered layout.
