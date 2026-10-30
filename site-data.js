@@ -10,20 +10,14 @@ window.MIJITAKU_SITE_DATA = {
     "nico": "https://x.com/nico_she_?s=11&t=mtYJcxfOAP7XxACw2ptSOg"
   },
   "issues": [
-    {
-      "id":"2026-11",
-     "label":"2026年11月号",
-     "short":"11月号",
-     "folder":"2026-11",
-     "pages":52,
-     "latest":true
-    },
+    {"id":"2026-11","label":"2026年11月号","short":"11月号","folder":"2026-11","pages":52,"latest":true},
     {
       "id": "2026-10",
       "label": "2026年10月号",
       "short": "10月号",
       "folder": "2026-10",
-      "pages": 56
+      "pages": 56,
+      "latest": false
     },
     {
       "id": "2026-09",
